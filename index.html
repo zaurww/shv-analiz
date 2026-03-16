@@ -543,10 +543,11 @@ function parseStatement(html) {
     const key = extractTaxKey(opName);
     const kyb = opName.includes('KYB');
     const kybl = opName.includes('KYBL');
-    const syb = opName.includes('SYB') && !kyb; // SYB but not KYB
-    const sybl = false; // SYB cancellation comes as plain Azalma, no special tag
+    const syb = opName.includes('SYB') && !kyb;
+    const sybl = false;
+    const yazilishDate = cells[0]; // Yazılış tarixi — used for VAHID MUZDLU grouping
 
-    records.push({ opName, opType, amount, key, kyb, kybl, syb, sybl });
+    records.push({ opName, opType, amount, key, kyb, kybl, syb, sybl, yazilishDate });
   }
 
   // Aggregate by key
@@ -561,7 +562,8 @@ function parseStatement(html) {
         syb_hesablama: 0, syb_azalma: 0,
         has_kyb: false, has_kybl: false,
         has_syb: false,
-        decl_count: 0
+        decl_count: 0,
+        vahidDates: new Set() // for VAHID MUZDLU: group by yazılış tarixi
       };
     }
     const t = taxMap[r.key];
@@ -582,8 +584,22 @@ function parseStatement(html) {
       if (r.opType === 'Hesablama') t.hesablama += r.amount;
       else if (r.opType === 'Azalma') t.azalma += r.amount;
       if (/CARİ\(B\)|DƏQİQLƏŞMİŞ\(B\)|DƏQİQLƏŞDİRİLMİŞ\(B\)/.test(r.opName) && r.opType !== 'Ödəniş') {
-        t.decl_count++;
+        if (r.key.startsWith('VAHID MUZDLU')) {
+          // Quarterly report: 3 rows per submission (one per month)
+          // Group by yazılış tarixi + declaration type (CARİ vs DƏQİQLƏŞMİŞ)
+          const declType = r.opName.match(/CARİ\(B\)|DƏQİQLƏŞMİŞ\(B\)|DƏQİQLƏŞDİRİLMİŞ\(B\)/)?.[0] || '';
+          t.vahidDates.add(r.yazilishDate + '|' + declType);
+        } else {
+          t.decl_count++;
+        }
       }
+    }
+  }
+
+  // For VAHID MUZDLU: decl_count = number of unique yazılış tarixi dates
+  for (const t of Object.values(taxMap)) {
+    if (t.key.startsWith('VAHID MUZDLU') && t.vahidDates.size > 0) {
+      t.decl_count = t.vahidDates.size;
     }
   }
 
