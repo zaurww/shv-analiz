@@ -251,6 +251,22 @@
   .badge-yellow { background: var(--yellow-bg); color: var(--yellow); border: 1px solid #78350f; }
   .badge-green  { background: var(--green-bg);  color: var(--green);  border: 1px solid #14532d; }
   .badge-muted  { background: var(--bg3);       color: var(--muted);  border: 1px solid var(--border); }
+  .badge-purple { background: #2e1065;          color: #a78bfa;       border: 1px solid #4c1d95; }
+
+  /* ── SYB ALERT BOX ── */
+  .syb-alert {
+    background: #1a0a2e;
+    border: 1px solid #4c1d95;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 24px;
+    font-size: 13px;
+    color: #a78bfa;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .syb-alert .icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
 
   /* ── ACTION ROW ── */
   .action-row {
@@ -298,6 +314,104 @@
     animation: spin 0.7s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── FOOTER GUIDE ── */
+  .footer-guide {
+    margin-top: 60px;
+    border-top: 1px solid var(--border);
+    padding: 40px 32px 48px;
+    background: var(--bg2);
+  }
+  .guide-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    max-width: 960px;
+  }
+  @media (max-width: 700px) {
+    .guide-grid { grid-template-columns: 1fr; }
+  }
+  .guide-block { display: flex; flex-direction: column; gap: 14px; }
+  .guide-title {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .guide-steps {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .guide-steps li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.5;
+  }
+  .step-num {
+    flex-shrink: 0;
+    width: 20px; height: 20px;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+    margin-top: 1px;
+  }
+  .warn-tag {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 7px;
+    background: var(--yellow-bg);
+    color: var(--yellow);
+    border: 1px solid #78350f;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .guide-note {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .guide-note b { color: var(--text); }
+  .mono {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+  }
+  .guide-output-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .output-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.5;
+  }
+  .output-icon {
+    font-size: 18px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .muted-text { color: var(--muted); font-size: 12px; }
 </style>
 </head>
 <body>
@@ -429,8 +543,10 @@ function parseStatement(html) {
     const key = extractTaxKey(opName);
     const kyb = opName.includes('KYB');
     const kybl = opName.includes('KYBL');
+    const syb = opName.includes('SYB') && !kyb; // SYB but not KYB
+    const sybl = false; // SYB cancellation comes as plain Azalma, no special tag
 
-    records.push({ opName, opType, amount, key, kyb, kybl });
+    records.push({ opName, opType, amount, key, kyb, kybl, syb, sybl });
   }
 
   // Aggregate by key
@@ -442,8 +558,10 @@ function parseStatement(html) {
         key: r.key,
         hesablama: 0, azalma: 0,
         kyb_hesablama: 0, kyb_azalma: 0,
+        syb_hesablama: 0, syb_azalma: 0,
         has_kyb: false, has_kybl: false,
-        declNames: new Set()  // unique declaration names for counting
+        has_syb: false,
+        decl_count: 0
       };
     }
     const t = taxMap[r.key];
@@ -456,19 +574,22 @@ function parseStatement(html) {
         if (r.opType === 'Hesablama') t.kyb_hesablama += r.amount;
         else if (r.opType === 'Azalma') t.kyb_azalma += r.amount;
       }
+    } else if (r.syb) {
+      t.has_syb = true;
+      if (r.opType === 'Hesablama') t.syb_hesablama += r.amount;
+      else if (r.opType === 'Azalma') t.syb_azalma += r.amount;
     } else {
       if (r.opType === 'Hesablama') t.hesablama += r.amount;
       else if (r.opType === 'Azalma') t.azalma += r.amount;
-      // Count declarations: CARİ(B), DƏQİQLƏŞMİŞ(B), CARİ(ARAYIS)
-      // Exclude: Cari hesablama (MV/ƏV avans), Ödəniş
-      if (/CARİ\([^)]+\)|DƏQİQLƏŞMİŞ\([^)]+\)/.test(r.opName) && r.opType !== 'Ödəniş') {
-        t.declNames.add(r.opName);
+      if (/CARİ\(B\)|DƏQİQLƏŞMİŞ\(B\)|DƏQİQLƏŞDİRİLMİŞ\(B\)/.test(r.opName) && r.opType !== 'Ödəniş') {
+        t.decl_count++;
       }
     }
   }
 
-  // Compute KYB status for each tax
+  // Compute KYB and SYB status for each tax
   for (const t of Object.values(taxMap)) {
+    // KYB
     const kyb_net = t.kyb_hesablama - t.kyb_azalma;
     if (!t.has_kyb) {
       t.kyb_status = 'none';
@@ -478,25 +599,37 @@ function parseStatement(html) {
       t.kyb_status = 'active';
     }
     t.kyb_net = kyb_net;
+
+    // SYB
+    const syb_net = t.syb_hesablama - t.syb_azalma;
+    if (!t.has_syb) {
+      t.syb_status = 'none';
+    } else if (syb_net <= 0) {
+      t.syb_status = 'cancelled';
+    } else {
+      t.syb_status = 'active';
+    }
+    t.syb_net = syb_net;
+
     t.client_net = t.hesablama - t.azalma;
-    t.total_hesablama = t.hesablama + t.kyb_hesablama;
-    t.total_azalma    = t.azalma + t.kyb_azalma;
+    t.total_hesablama = t.hesablama + t.kyb_hesablama + t.syb_hesablama;
+    t.total_azalma    = t.azalma    + t.kyb_azalma    + t.syb_azalma;
     t.total_net       = t.total_hesablama - t.total_azalma;
-    t.decl_count      = t.declNames.size;
   }
 
   const taxes = Object.values(taxMap)
-    .filter(t => t.total_net !== 0 || t.has_kyb)
+    .filter(t => t.total_net !== 0 || t.has_kyb || t.has_syb)
     .sort((a, b) => taxSortKey(a.key).localeCompare(taxSortKey(b.key)));
 
-  // KYB summary
-  const kybActive = taxes.filter(t => t.kyb_status === 'active');
+  const kybActive    = taxes.filter(t => t.kyb_status === 'active');
   const kybCancelled = taxes.filter(t => t.kyb_status === 'cancelled');
+  const sybActive    = taxes.filter(t => t.syb_status === 'active');
+  const sybCancelled = taxes.filter(t => t.syb_status === 'cancelled');
 
   return {
     companyName, voen, period, printDate, totalDebt,
-    taxes, kybActive, kybCancelled, summaryData,
-    rawHeaders, rawRows
+    taxes, kybActive, kybCancelled, sybActive, sybCancelled,
+    summaryData, rawHeaders, rawRows
   };
 }
 
@@ -595,10 +728,16 @@ function fmt(n) {
 
 function kybBadge(status, net) {
   if (status === 'none') return '<span class="badge badge-muted">—</span>';
-  if (status === 'cancelled') return '<span class="badge badge-green">✓ Ləğv edilib</span>';
-  // active
+  if (status === 'cancelled') return '<span class="badge badge-green">✓ Ləğv</span>';
   const fmtNet = net.toLocaleString('az-AZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  return `<span class="badge badge-red">⚠ Aktiv: ${fmtNet}</span>`;
+  return `<span class="badge badge-red">⚠ ${fmtNet}</span>`;
+}
+
+function sybBadge(status, net) {
+  if (status === 'none') return '<span class="badge badge-muted">—</span>';
+  if (status === 'cancelled') return '<span class="badge badge-green">✓ Ləğv</span>';
+  const fmtNet = net.toLocaleString('az-AZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return `<span class="badge badge-purple">🔍 ${fmtNet}</span>`;
 }
 
 // ─── RENDER ───────────────────────────────────────────────────
@@ -609,7 +748,8 @@ function renderResults(data) {
 
   const kybActiveCount = data.kybActive.length;
   const kybActiveTotal = data.kybActive.reduce((s, t) => s + t.kyb_net, 0);
-  const totalCharged = data.taxes.reduce((s, t) => s + t.hesablama + t.kyb_hesablama, 0);
+  const sybActiveCount = data.sybActive.length;
+  const sybActiveTotal = data.sybActive.reduce((s, t) => s + t.syb_net, 0);
 
   // KYB alert
   let kybAlertHtml = '';
@@ -627,7 +767,22 @@ function renderResults(data) {
       </div>`;
   }
 
-  // Summary chips
+  // SYB alert
+  let sybAlertHtml = '';
+  if (sybActiveCount > 0) {
+    const names = data.sybActive.map(t => `<b>${t.key}</b>`).join(', ');
+    const total = sybActiveTotal.toLocaleString('az-AZ', { minimumFractionDigits: 2 });
+    sybAlertHtml = `
+      <div class="syb-alert">
+        <span class="icon">🔍</span>
+        <div>
+          <b>Aktiv səyyar vergi yoxlaması (SYB) aşkar edildi!</b><br>
+          ${names} üzrə cəmi <b>${total} ₼</b> məbləğində səyyar yoxlama var.
+          Vergi ödəyicisi məlumatlandırılıbmı?
+        </div>
+      </div>`;
+  }
+
   const debtClass = data.totalDebt > 0 ? 'danger' : 'ok';
 
   el.innerHTML = `
@@ -642,7 +797,7 @@ function renderResults(data) {
       </div>
     </div>
 
-    ${kybAlertHtml}
+    ${kybAlertHtml}${sybAlertHtml}
 
     <div class="summary-row">
       <div class="chip">
@@ -658,6 +813,14 @@ function renderResults(data) {
         <div class="chip-value ${kybActiveTotal > 0 ? 'warn' : 'ok'}">${kybActiveTotal.toLocaleString('az-AZ', {minimumFractionDigits:2})} ₼</div>
       </div>
       <div class="chip">
+        <div class="chip-label">Aktiv SYB sayı</div>
+        <div class="chip-value ${sybActiveCount > 0 ? 'danger' : 'ok'}">${sybActiveCount}</div>
+      </div>
+      <div class="chip">
+        <div class="chip-label">Aktiv SYB məbləği</div>
+        <div class="chip-value ${sybActiveTotal > 0 ? 'warn' : 'ok'}">${sybActiveTotal.toLocaleString('az-AZ', {minimumFractionDigits:2})} ₼</div>
+      </div>
+      <div class="chip">
         <div class="chip-label">Vergi növlərinin sayı</div>
         <div class="chip-value">${data.taxes.length}</div>
       </div>
@@ -670,7 +833,12 @@ function renderResults(data) {
 
     ${data.kybCancelled.length > 0 ? `
     <div class="section-title">Ləğv edilmiş KYB-lər</div>
-    <div class="table-wrap">${renderKybTable(data.kybCancelled)}</div>
+    <div class="table-wrap">${renderCancelledTable(data.kybCancelled, 'KYB')}</div>
+    ` : ''}
+
+    ${data.sybCancelled.length > 0 ? `
+    <div class="section-title">Ləğv edilmiş SYB-lər</div>
+    <div class="table-wrap">${renderCancelledTable(data.sybCancelled, 'SYB')}</div>
     ` : ''}
 
     <div class="action-row">
@@ -693,12 +861,15 @@ function renderTaxTable(taxes) {
       <td style="text-align:center">${declCell}</td>
       <td>${fmt(t.hesablama)}</td>
       <td>${fmt(t.kyb_hesablama)}</td>
+      <td>${fmt(t.syb_hesablama)}</td>
       <td>${fmt(t.total_hesablama)}</td>
       <td>${fmt(t.azalma)}</td>
       <td>${fmt(t.kyb_azalma)}</td>
+      <td>${fmt(t.syb_azalma)}</td>
       <td>${fmt(t.total_azalma)}</td>
       <td><b>${fmt(t.total_net)}</b></td>
       <td>${kybBadge(t.kyb_status, t.kyb_net)}</td>
+      <td>${sybBadge(t.syb_status, t.syb_net)}</td>
     </tr>`;
   }).join('');
 
@@ -707,17 +878,20 @@ function renderTaxTable(taxes) {
       <tr>
         <th rowspan="2" style="vertical-align:middle;text-align:left">Vergi / Dövr</th>
         <th rowspan="2" style="vertical-align:middle">Bəyannamə</th>
-        <th colspan="3" style="text-align:center;border-bottom:1px solid var(--accent);color:var(--accent)">Hesablama</th>
-        <th colspan="3" style="text-align:center;border-bottom:1px solid #f59e0b;color:#f59e0b">Azalma</th>
+        <th colspan="4" style="text-align:center;border-bottom:1px solid var(--accent);color:var(--accent)">Hesablama</th>
+        <th colspan="4" style="text-align:center;border-bottom:1px solid #f59e0b;color:#f59e0b">Azalma</th>
         <th rowspan="2" style="vertical-align:middle">Cəmi Qalıq</th>
-        <th rowspan="2" style="vertical-align:middle">KYB Status</th>
+        <th rowspan="2" style="vertical-align:middle">KYB</th>
+        <th rowspan="2" style="vertical-align:middle">SYB</th>
       </tr>
       <tr>
         <th>Müştəri</th>
-        <th>KYB</th>
+        <th style="color:#f87171">KYB</th>
+        <th style="color:#a78bfa">SYB</th>
         <th>Cəmi</th>
         <th>Müştəri</th>
-        <th>KYB/KYBL</th>
+        <th style="color:#f87171">KYB</th>
+        <th style="color:#a78bfa">SYB</th>
         <th>Cəmi</th>
       </tr>
     </thead>
@@ -725,20 +899,22 @@ function renderTaxTable(taxes) {
   </table>`;
 }
 
-function renderKybTable(taxes) {
+function renderCancelledTable(taxes, type) {
+  const hesKey = type === 'KYB' ? 'kyb_hesablama' : 'syb_hesablama';
+  const azKey  = type === 'KYB' ? 'kyb_azalma'    : 'syb_azalma';
   const rows = taxes.map(t => `
     <tr>
       <td>${t.key}</td>
-      <td>${fmt(t.kyb_hesablama)}</td>
-      <td>${fmt(t.kyb_azalma)}</td>
+      <td>${fmt(t[hesKey])}</td>
+      <td>${fmt(t[azKey])}</td>
       <td><span class="badge badge-green">✓ Ləğv edilib</span></td>
     </tr>
   `).join('');
   return `<table>
     <thead><tr>
       <th>Vergi / Dövr</th>
-      <th>KYB hesablama</th>
-      <th>KYB ləğvi (KYBL)</th>
+      <th>${type} hesablama</th>
+      <th>${type} ləğvi</th>
       <th>Status</th>
     </tr></thead>
     <tbody>${rows}</tbody>
@@ -755,45 +931,52 @@ async function downloadXLSX(data) {
     const wb = new ExcelJS.Workbook();
     wb.creator = 'Şəxsi Hesab Analizatoru';
 
-    const statusLabel = { none: '—', active: 'Aktiv KYB', cancelled: 'KYB Ləğv edilib' };
+    const statusLabel = {
+      none: '—',
+      active: 'Aktiv',
+      cancelled: 'Ləğv edilib'
+    };
 
     // ── Light theme colour palette ──
     const C = {
-      // Backgrounds
       white:      'FFFFFF',
-      row1:       'F8FAFC',   // very light grey stripe
-      row2:       'FFFFFF',   // white stripe
-      rowKybBg:   'FFF7ED',   // light orange tint for active KYB rows
-      // Header / title
-      titleBg:    '1E3A5F',   // deep navy
+      row1:       'F8FAFC',
+      row2:       'FFFFFF',
+      rowKybBg:   'FFF7ED',   // active KYB row tint
+      rowSybBg:   'F5F3FF',   // active SYB row tint (light purple)
+      titleBg:    '1E3A5F',
       titleFg:    'FFFFFF',
       subtitleBg: '2D5282',
       subtitleFg: 'E2E8F0',
-      // KYB warning
       kybWarnBg:  'FFFBEB',
       kybWarnFg:  '92400E',
       kybWarnBdr: 'FCD34D',
-      // Column group headers
-      blueHdrBg:  '1D4ED8',   // blue group (Hesablama)
+      sybWarnBg:  'F5F3FF',
+      sybWarnFg:  '4C1D95',
+      sybWarnBdr: 'A78BFA',
+      blueHdrBg:  '1D4ED8',
       blueHdrFg:  'FFFFFF',
-      blueSubBg:  'DBEAFE',   // light blue sub-header
+      blueSubBg:  'DBEAFE',
       blueSubFg:  '1E40AF',
-      amberHdrBg: 'D97706',   // amber group (Azalma)
+      amberHdrBg: 'D97706',
       amberHdrFg: 'FFFFFF',
-      amberSubBg: 'FEF3C7',   // light amber sub-header
+      amberSubBg: 'FEF3C7',
       amberSubFg: '92400E',
-      grayHdrBg:  '374151',   // gray group (other headers)
+      grayHdrBg:  '374151',
       grayHdrFg:  'FFFFFF',
       graySubBg:  'F3F4F6',
       graySubFg:  '374151',
-      // Data values
+      purpleHdrBg:'5B21B6',
+      purpleHdrFg:'FFFFFF',
+      purpleSubBg:'EDE9FE',
+      purpleSubFg:'4C1D95',
       textDark:   '111827',
       textMuted:  '6B7280',
       accentBlue: '1D4ED8',
       red:        'DC2626',
       green:      '16A34A',
       amber:      'D97706',
-      // Borders
+      purple:     '7C3AED',
       borderGray: 'D1D5DB',
       borderMed:  '9CA3AF',
     };
@@ -801,19 +984,11 @@ async function downloadXLSX(data) {
     const numFmt    = '#,##0.00;[Red]-#,##0.00;"-"';
     const numFmtInt = '#,##0;[Red]-#,##0;"-"';
 
-    // ── Helper functions ──
-    function fill(hex) {
-      return { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF' + hex } };
-    }
-    function font(hex, bold, size) {
-      return { name: 'Calibri', size: size || 10, bold: !!bold, color: { argb: 'FF' + hex } };
-    }
+    function fill(hex) { return { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF' + hex } }; }
+    function font(hex, bold, size) { return { name: 'Calibri', size: size || 10, bold: !!bold, color: { argb: 'FF' + hex } }; }
     function allBorders(style, hex) {
       const s = { style, color: { argb: 'FF' + (hex || C.borderGray) } };
       return { top: s, left: s, bottom: s, right: s };
-    }
-    function btmBorder(style, hex) {
-      return { bottom: { style, color: { argb: 'FF' + (hex || C.borderGray) } } };
     }
     function applyHeader(cell, value, bgHex, fgHex, bold, size, align) {
       cell.value = value;
@@ -822,68 +997,79 @@ async function downloadXLSX(data) {
       cell.alignment = { horizontal: align || 'center', vertical: 'middle', wrapText: true };
     }
 
-    // ── Auto-width helper: track max char length per column ──
-    const colWidths = new Array(10).fill(0);
+    // 13 columns: Tax, Decl, Müş-Hes, KYB-Hes, SYB-Hes, Cəmi-Hes, Müş-Az, KYB-Az, SYB-Az, Cəmi-Az, Net, KYB-st, SYB-st
+    const colWidths = new Array(13).fill(0);
     function trackWidth(colIdx, text) {
       if (!text) return;
       const len = String(text).length;
       if (len > colWidths[colIdx]) colWidths[colIdx] = len;
     }
 
-    // ── Sheet 1: Analiz ──
+    const NCOLS = 13;
+    const lastColLetter = String.fromCharCode(64 + NCOLS); // 'M'
+
     const ws = wb.addWorksheet('Analiz', {
       properties: { tabColor: { argb: 'FF1D4ED8' } },
       views: [{ state: 'frozen', ySplit: 6 }],
       pageSetup: { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0 }
     });
 
-    // ── ROW 1: Company title ──
-    ws.mergeCells('A1:J1');
+    // ── ROW 1: Company ──
+    ws.mergeCells(`A1:${lastColLetter}1`);
     const r1 = ws.getRow(1); r1.height = 26;
     applyHeader(r1.getCell(1), data.companyName, C.titleBg, C.titleFg, true, 13, 'left');
     r1.getCell(1).alignment = { horizontal: 'left', vertical: 'middle', indent: 1 };
 
     // ── ROW 2: Subtitle ──
-    ws.mergeCells('A2:J2');
+    ws.mergeCells(`A2:${lastColLetter}2`);
     const r2 = ws.getRow(2); r2.height = 16;
     applyHeader(r2.getCell(1),
       `VÖEN: ${data.voen}   |   Dövr: ${data.period}   |   Çap tarixi: ${data.printDate}`,
       C.subtitleBg, C.subtitleFg, false, 9, 'left');
     r2.getCell(1).alignment = { horizontal: 'left', vertical: 'middle', indent: 1 };
 
-    // ── ROW 3: KYB warning or clean spacer ──
-    ws.mergeCells('A3:J3');
+    // ── ROW 3: KYB warning ──
+    ws.mergeCells(`A3:${lastColLetter}3`);
     const r3 = ws.getRow(3); r3.height = 18;
     if (data.kybActive.length > 0) {
       const tot = data.kybActive.reduce((s, t) => s + t.kyb_net, 0);
-      const warnText = `⚠  Aktiv KYB: ${data.kybActive.map(t => t.key).join(', ')}   |   Cəmi: ${tot.toLocaleString('az-AZ', { minimumFractionDigits: 2 })} ₼`;
-      applyHeader(r3.getCell(1), warnText, C.kybWarnBg, C.kybWarnFg, true, 10, 'left');
+      applyHeader(r3.getCell(1),
+        `⚠  Aktiv KYB: ${data.kybActive.map(t => t.key).join(', ')}   |   Cəmi: ${tot.toLocaleString('az-AZ', { minimumFractionDigits: 2 })} ₼`,
+        C.kybWarnBg, C.kybWarnFg, true, 10, 'left');
       r3.getCell(1).alignment = { horizontal: 'left', vertical: 'middle', indent: 1 };
-      r3.getCell(1).border = {
-        bottom: { style: 'medium', color: { argb: 'FF' + C.kybWarnBdr } }
-      };
+      r3.getCell(1).border = { bottom: { style: 'medium', color: { argb: 'FF' + C.kybWarnBdr } } };
     } else {
       r3.getCell(1).fill = fill(C.white);
     }
 
-    // ── ROW 4: thin separator ──
-    ws.mergeCells('A4:J4');
-    const r4 = ws.getRow(4); r4.height = 4;
-    r4.getCell(1).fill = fill(C.borderGray);
+    // ── ROW 4: SYB warning ──
+    ws.mergeCells(`A4:${lastColLetter}4`);
+    const r4 = ws.getRow(4); r4.height = 18;
+    if (data.sybActive.length > 0) {
+      const tot = data.sybActive.reduce((s, t) => s + t.syb_net, 0);
+      applyHeader(r4.getCell(1),
+        `🔍  Aktiv SYB: ${data.sybActive.map(t => t.key).join(', ')}   |   Cəmi: ${tot.toLocaleString('az-AZ', { minimumFractionDigits: 2 })} ₼`,
+        C.sybWarnBg, C.sybWarnFg, true, 10, 'left');
+      r4.getCell(1).alignment = { horizontal: 'left', vertical: 'middle', indent: 1 };
+      r4.getCell(1).border = { bottom: { style: 'medium', color: { argb: 'FF' + C.sybWarnBdr } } };
+    } else {
+      r4.getCell(1).fill = fill(C.white);
+    }
 
-    // ── ROW 5: Group header ──
-    ws.mergeCells('C5:E5');
-    ws.mergeCells('F5:H5');
+    // ── ROW 5: Group headers ──
+    // Cols: 1=Tax, 2=Decl, 3-6=Hesablama(Müş,KYB,SYB,Cəmi), 7-10=Azalma(Müş,KYB,SYB,Cəmi), 11=Net, 12=KYB, 13=SYB
+    ws.mergeCells('C5:F5');
+    ws.mergeCells('G5:J5');
     const r5 = ws.getRow(5); r5.height = 20;
-    for (let c = 1; c <= 10; c++) r5.getCell(c).fill = fill(C.grayHdrBg);
-
+    for (let c = 1; c <= NCOLS; c++) r5.getCell(c).fill = fill(C.grayHdrBg);
     const grpDefs5 = [
-      [1,  'Vergi / Dövr',  C.grayHdrBg,  C.grayHdrFg,  'left'],
-      [2,  'Bəyannamə',     C.grayHdrBg,  C.grayHdrFg,  'center'],
-      [3,  'Hesablama',     C.blueHdrBg,  C.blueHdrFg,  'center'],
-      [6,  'Azalma',        C.amberHdrBg, C.amberHdrFg, 'center'],
-      [9,  'Cəmi Qalıq',   C.grayHdrBg,  C.grayHdrFg,  'center'],
-      [10, 'KYB Status',   C.grayHdrBg,  C.grayHdrFg,  'center'],
+      [1,  'Vergi / Dövr', C.grayHdrBg,  C.grayHdrFg,  'left'],
+      [2,  'Bəyannamə',    C.grayHdrBg,  C.grayHdrFg,  'center'],
+      [3,  'Hesablama',    C.blueHdrBg,  C.blueHdrFg,  'center'],
+      [7,  'Azalma',       C.amberHdrBg, C.amberHdrFg, 'center'],
+      [11, 'Cəmi Qalıq',  C.grayHdrBg,  C.grayHdrFg,  'center'],
+      [12, 'KYB',          C.grayHdrBg,  C.grayHdrFg,  'center'],
+      [13, 'SYB',          C.purpleHdrBg,C.purpleHdrFg,'center'],
     ];
     grpDefs5.forEach(([col, val, bg, fg, align]) => {
       const cell = r5.getCell(col);
@@ -892,12 +1078,13 @@ async function downloadXLSX(data) {
     });
 
     // ── ROW 6: Sub-headers ──
+    // 1=, 2=, 3=Müştəri, 4=KYB, 5=SYB, 6=Cəmi, 7=Müştəri, 8=KYB, 9=SYB, 10=Cəmi, 11=, 12=, 13=
     const r6 = ws.getRow(6); r6.height = 16;
-    const subHeaders = ['', '', 'Müştəri', 'KYB', 'Cəmi', 'Müştəri', 'KYB/KYBL', 'Cəmi', '', ''];
-    subHeaders.forEach((v, i) => {
+    const subHdrs = ['', '', 'Müştəri', 'KYB', 'SYB', 'Cəmi', 'Müştəri', 'KYB', 'SYB', 'Cəmi', '', '', ''];
+    subHdrs.forEach((v, i) => {
       const cell = r6.getCell(i + 1);
-      const isBlue  = i >= 2 && i <= 4;
-      const isAmber = i >= 5 && i <= 7;
+      const isBlue   = i >= 2 && i <= 5;
+      const isAmber  = i >= 6 && i <= 9;
       const bg = isBlue ? C.blueSubBg : isAmber ? C.amberSubBg : C.graySubBg;
       const fg = isBlue ? C.blueSubFg : isAmber ? C.amberSubFg : C.graySubFg;
       applyHeader(cell, v, bg, fg, true, 9, 'center');
@@ -907,37 +1094,39 @@ async function downloadXLSX(data) {
     // ── DATA ROWS ──
     data.taxes.forEach((t, i) => {
       const isKybActive = t.kyb_status === 'active';
-      const rowBg = isKybActive ? C.rowKybBg : (i % 2 === 0 ? C.row1 : C.row2);
+      const isSybActive = t.syb_status === 'active';
+      const rowBg = isKybActive ? C.rowKybBg : isSybActive ? C.rowSybBg : (i % 2 === 0 ? C.row1 : C.row2);
 
       const dr = ws.addRow([
         t.key,
         t.decl_count || null,
-        t.hesablama       || null,
-        t.kyb_hesablama   || null,
-        t.total_hesablama || null,
-        t.azalma          || null,
-        t.kyb_azalma      || null,
-        t.total_azalma    || null,
-        t.total_net       || null,
-        statusLabel[t.kyb_status],
+        t.hesablama       || null,  // 3
+        t.kyb_hesablama   || null,  // 4
+        t.syb_hesablama   || null,  // 5
+        t.total_hesablama || null,  // 6
+        t.azalma          || null,  // 7
+        t.kyb_azalma      || null,  // 8
+        t.syb_azalma      || null,  // 9
+        t.total_azalma    || null,  // 10
+        t.total_net       || null,  // 11
+        statusLabel[t.kyb_status],  // 12
+        statusLabel[t.syb_status],  // 13
       ]);
       dr.height = 17;
-
-      // track widths
       trackWidth(0, t.key);
-      trackWidth(9, statusLabel[t.kyb_status]);
 
       dr.eachCell({ includeEmpty: true }, (cell, cn) => {
-        const isNum    = cn >= 3 && cn <= 9;
+        const isNum    = cn >= 3 && cn <= 11;
         const isCount  = cn === 2;
-        const isNet    = cn === 9;
-        const isStatus = cn === 10;
+        const isNet    = cn === 11;
+        const isKybSt  = cn === 12;
+        const isSybSt  = cn === 13;
         const isTax    = cn === 1;
 
         cell.fill = fill(rowBg);
         cell.border = allBorders('thin', C.borderGray);
         cell.alignment = {
-          horizontal: isNum || isCount ? 'right' : isStatus ? 'center' : 'left',
+          horizontal: isNum || isCount ? 'right' : (isKybSt || isSybSt) ? 'center' : 'left',
           vertical: 'middle'
         };
 
@@ -945,8 +1134,10 @@ async function downloadXLSX(data) {
           ? C.accentBlue
           : isNet
             ? (t.total_net < 0 ? C.red : t.total_net === 0 ? C.textMuted : C.textDark)
-          : isStatus
+          : isKybSt
             ? (t.kyb_status === 'active' ? C.red : t.kyb_status === 'cancelled' ? C.green : C.textMuted)
+          : isSybSt
+            ? (t.syb_status === 'active' ? C.purple : t.syb_status === 'cancelled' ? C.green : C.textMuted)
           : C.textDark;
 
         cell.font = font(fg, isNet || isTax, 10);
@@ -955,86 +1146,36 @@ async function downloadXLSX(data) {
       });
     });
 
-    // ── BLANK SPACER ROW ──
+    // ── BLANK SPACER ──
     const blank = ws.addRow([]); blank.height = 6;
     blank.eachCell({ includeEmpty: true }, c => { c.fill = fill(C.white); });
 
     // ── SUMMARY ROWS ──
     const summaryItems = [
-      ['Cəmi ödənməli borc', data.totalDebt,                                  data.totalDebt > 0            ? C.red   : C.green],
-      ['Aktiv KYB sayı',     data.kybActive.length,                           data.kybActive.length > 0     ? C.amber : C.green],
-      ['Aktiv KYB məbləği',  data.kybActive.reduce((s,t)=>s+t.kyb_net,0),    data.kybActive.length > 0     ? C.red   : C.green],
+      ['Cəmi ödənməli borc', data.totalDebt,                                data.totalDebt > 0         ? C.red    : C.green],
+      ['Aktiv KYB sayı',     data.kybActive.length,                         data.kybActive.length > 0  ? C.amber  : C.green],
+      ['Aktiv KYB məbləği',  data.kybActive.reduce((s,t)=>s+t.kyb_net,0),  data.kybActive.length > 0  ? C.red    : C.green],
+      ['Aktiv SYB sayı',     data.sybActive.length,                         data.sybActive.length > 0  ? C.purple : C.green],
+      ['Aktiv SYB məbləği',  data.sybActive.reduce((s,t)=>s+t.syb_net,0),  data.sybActive.length > 0  ? C.red    : C.green],
     ];
     summaryItems.forEach(([lbl, val, vc]) => {
       const sr = ws.addRow([lbl, val]); sr.height = 18;
       const c1 = sr.getCell(1);
-      c1.value = lbl;
-      c1.font = font(C.textDark, true, 10);
-      c1.fill = fill(C.graySubBg);
+      c1.value = lbl; c1.font = font(C.textDark, true, 10); c1.fill = fill(C.graySubBg);
       c1.alignment = { horizontal: 'left', vertical: 'middle', indent: 1 };
       c1.border = allBorders('thin', C.borderGray);
       const c2 = sr.getCell(2);
-      c2.value = val;
-      c2.numFmt = numFmt;
-      c2.font = font(vc, true, 10);
-      c2.fill = fill(C.graySubBg);
+      c2.value = val; c2.numFmt = numFmt; c2.font = font(vc, true, 10); c2.fill = fill(C.graySubBg);
       c2.alignment = { horizontal: 'right', vertical: 'middle' };
       c2.border = allBorders('thin', C.borderGray);
     });
 
-    // ── AUTO COLUMN WIDTHS (min 10, max 45) ──
-    // Fixed minimums per column
-    const minWidths = [28, 11, 15, 13, 15, 15, 13, 15, 15, 18];
+    // ── AUTO COLUMN WIDTHS ──
+    const minWidths = [28, 11, 14, 12, 12, 14, 14, 12, 12, 14, 14, 14, 14];
     ws.columns.forEach((col, i) => {
-      const auto = Math.max(minWidths[i], colWidths[i] + 2);
+      const auto = Math.max(minWidths[i] || 12, colWidths[i] + 2);
       col.width = Math.min(auto, 45);
     });
-
-    // ── SHEET 2: KYB Aktiv (if any) ──
-    if (data.kybActive.length > 0) {
-      const ws2 = wb.addWorksheet('KYB Aktiv', {
-        properties: { tabColor: { argb: 'FFDC2626' } },
-        pageSetup: { orientation: 'portrait' }
-      });
-
-      // Title
-      ws2.mergeCells('A1:E1');
-      const w2r1 = ws2.getRow(1); w2r1.height = 24;
-      applyHeader(w2r1.getCell(1), 'Aktiv Kameral Yoxlamalar (KYB)', C.titleBg, C.titleFg, true, 12, 'left');
-      w2r1.getCell(1).alignment = { horizontal: 'left', vertical: 'middle', indent: 1 };
-
-      ws2.mergeCells('A2:E2');
-      const w2r2 = ws2.getRow(2); w2r2.height = 15;
-      applyHeader(w2r2.getCell(1), `${data.companyName}  |  VÖEN: ${data.voen}`, C.subtitleBg, C.subtitleFg, false, 9, 'left');
-      w2r2.getCell(1).alignment = { horizontal: 'left', vertical: 'middle', indent: 1 };
-
-      // Header row
-      const hr2 = ws2.addRow(['Vergi / Dövr', 'KYB Hesablama', 'KYB Azalma', 'KYB Qalıq', 'Status']);
-      hr2.height = 18;
-      hr2.eachCell(c => {
-        c.font = font(C.grayHdrFg, true, 10);
-        c.fill = fill(C.grayHdrBg);
-        c.alignment = { horizontal: 'center', vertical: 'middle' };
-        c.border = allBorders('thin', C.white);
-      });
-
-      // Data
-      data.kybActive.forEach((t, i) => {
-        const dr2 = ws2.addRow([t.key, t.kyb_hesablama||null, t.kyb_azalma||null, t.kyb_net||null, 'Aktiv KYB']);
-        dr2.height = 17;
-        dr2.eachCell({ includeEmpty: true }, (cell, cn) => {
-          cell.fill = fill(i % 2 === 0 ? C.row1 : C.row2);
-          cell.font = font(cn === 5 ? C.red : cn === 4 ? C.red : C.textDark, cn === 5, 10);
-          cell.alignment = { horizontal: cn >= 2 && cn <= 4 ? 'right' : cn === 5 ? 'center' : 'left', vertical: 'middle' };
-          if (cn >= 2 && cn <= 4) cell.numFmt = numFmt;
-          cell.border = allBorders('thin', C.borderGray);
-        });
-      });
-
-      // Auto widths for sheet 2
-      const w2Mins = [28, 16, 14, 14, 16];
-      ws2.columns.forEach((col, i) => { col.width = w2Mins[i] || 14; });
-    }
 
     // Add clean statement sheet BEFORE writing buffer
     await downloadCleanXLSX(data, wb);
@@ -1250,5 +1391,78 @@ function hideError() {
   document.getElementById('errorBox').style.display = 'none';
 }
 </script>
+
+<!-- ── FOOTER INSTRUCTIONS ── -->
+<div class="footer-guide">
+
+  <div class="guide-grid">
+
+    <!-- LEFT: How to download -->
+    <div class="guide-block">
+      <div class="guide-title">📥 Faylı necə yükləmək lazımdır</div>
+      <ol class="guide-steps">
+        <li>
+          <span class="step-num">1</span>
+          <span>Vergi portalına daxil olun: <span class="mono">e-taxes.gov.az</span></span>
+        </li>
+        <li>
+          <span class="step-num">2</span>
+          <span>Şəxsi hesab → hesab vərəqəsi bölməsinə keçin</span>
+        </li>
+        <li>
+          <span class="step-num">3</span>
+          <span>Dövrü seçin və <b>«XLS»</b> düyməsini basın
+            <span class="warn-tag">⚠ «HTML» yox, məhz «XLS»</span>
+          </span>
+        </li>
+        <li>
+          <span class="step-num">4</span>
+          <span>Yüklənmiş faylı bu səhifəyə atın və ya «Fayl seçin» ilə açın</span>
+        </li>
+      </ol>
+      <div class="guide-note">
+        <b>Qeyd:</b> Bəzi brauzerlər faylı <span class="mono">.xls</span> əvəzinə <span class="mono">.html</span> kimi saxlayır — bu normaldır, alət hər iki formatı oxuyur. Lakin portaldakı «HTML» düyməsi ilə yüklənmiş fayl <b>işləmir</b>.
+      </div>
+    </div>
+
+    <!-- RIGHT: Output description -->
+    <div class="guide-block">
+      <div class="guide-title">📊 Nəticə nə göstərir</div>
+      <div class="guide-output-list">
+        <div class="output-item">
+          <div class="output-icon">🏢</div>
+          <div>
+            <b>Şirkət kartı</b><br>
+            <span class="muted-text">Ad, VÖEN, əhatə dövrü və çap tarixi</span>
+          </div>
+        </div>
+        <div class="output-item">
+          <div class="output-icon">⚠️</div>
+          <div>
+            <b>KYB xəbərdarlığı</b><br>
+            <span class="muted-text">Aktiv kameral yoxlama varsa — hansı vergi, neçə manat</span>
+          </div>
+        </div>
+        <div class="output-item">
+          <div class="output-icon">📋</div>
+          <div>
+            <b>Vergilər üzrə cədvəl</b><br>
+            <span class="muted-text">Hər vergi/dövr üzrə: hesablama, azalma, qalıq, bəyannamə sayı, KYB statusu</span>
+          </div>
+        </div>
+        <div class="output-item">
+          <div class="output-icon">⬇️</div>
+          <div>
+            <b>XLSX ixracı (2 vərəq)</b><br>
+            <span class="muted-text"><b>Analiz</b> — formatlanmış hesabat, çap üçün hazır<br>
+            <b>Orijinal Statement</b> — təmizlənmiş portal məlumatı: tarixlər Excel formatında, məbləğlər rəqəm kimi</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
 </body>
 </html>
