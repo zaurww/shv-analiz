@@ -9,22 +9,24 @@
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
 
   :root {
-    --bg: #0f1117;
-    --bg2: #161b27;
-    --bg3: #1e2535;
-    --border: #2a3347;
-    --text: #e2e8f0;
-    --muted: #64748b;
-    --accent: #3b82f6;
-    --accent2: #1d4ed8;
-    --green: #10b981;
-    --green-bg: #052e16;
-    --red: #ef4444;
-    --red-bg: #2d0a0a;
-    --yellow: #f59e0b;
+    --bg:        #0f1117;
+    --bg2:       #161b27;
+    --bg3:       #1e2535;
+    --border:    #2a3347;
+    --text:      #e2e8f0;
+    --muted:     #64748b;
+    --accent:    #3b82f6;
+    --accent2:   #1d4ed8;
+    --green:     #10b981;
+    --green-bg:  #052e16;
+    --red:       #ef4444;
+    --red-bg:    #2d0a0a;
+    --yellow:    #f59e0b;
     --yellow-bg: #2d1f02;
-    --mono: 'IBM Plex Mono', monospace;
-    --sans: 'IBM Plex Sans', sans-serif;
+    --purple:    #a855f7;
+    --purple-bg: #1e0a2e;
+    --mono:      'IBM Plex Mono', monospace;
+    --sans:      'IBM Plex Sans', sans-serif;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -58,13 +60,8 @@
     font-size: 15px;
     font-weight: 600;
     letter-spacing: 0.05em;
-    color: var(--text);
   }
-  .header p {
-    font-size: 12px;
-    color: var(--muted);
-    margin-top: 1px;
-  }
+  .header p { font-size: 12px; color: var(--muted); margin-top: 1px; }
 
   /* ── DROP ZONE ── */
   #drop-section {
@@ -75,8 +72,7 @@
     gap: 24px;
   }
   .drop-zone {
-    width: 100%;
-    max-width: 560px;
+    width: 100%; max-width: 560px;
     border: 2px dashed var(--border);
     border-radius: 12px;
     padding: 48px 32px;
@@ -91,7 +87,7 @@
   }
   .drop-icon { font-size: 40px; margin-bottom: 12px; }
   .drop-zone h2 { font-size: 16px; font-weight: 500; margin-bottom: 6px; }
-  .drop-zone p { font-size: 13px; color: var(--muted); }
+  .drop-zone p  { font-size: 13px; color: var(--muted); }
   .drop-zone input { display: none; }
   .btn-upload {
     display: inline-block;
@@ -122,30 +118,12 @@
     align-items: flex-start;
     gap: 16px;
   }
-  .company-name {
-    font-family: var(--mono);
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--accent);
-  }
-  .company-voen {
-    font-size: 12px;
-    color: var(--muted);
-    margin-top: 3px;
-  }
-  .company-period {
-    font-size: 12px;
-    color: var(--muted);
-    text-align: right;
-  }
+  .company-name  { font-family: var(--mono); font-size: 14px; font-weight: 600; color: var(--accent); }
+  .company-voen  { font-size: 12px; color: var(--muted); margin-top: 3px; }
+  .company-period { font-size: 12px; color: var(--muted); text-align: right; }
 
-  /* ── SUMMARY CHIPS ── */
-  .summary-row {
-    display: flex;
-    gap: 12px;
-    margin-bottom: 28px;
-    flex-wrap: wrap;
-  }
+  /* ── CHIPS ── */
+  .summary-row { display: flex; gap: 12px; margin-bottom: 28px; flex-wrap: wrap; }
   .chip {
     background: var(--bg2);
     border: 1px solid var(--border);
@@ -155,30 +133,25 @@
     min-width: 140px;
   }
   .chip-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
-  .chip-value {
-    font-family: var(--mono);
-    font-size: 18px;
-    font-weight: 600;
-    margin-top: 4px;
-  }
-  .chip-value.warn { color: var(--yellow); }
+  .chip-value { font-family: var(--mono); font-size: 18px; font-weight: 600; margin-top: 4px; }
+  .chip-value.warn   { color: var(--yellow); }
   .chip-value.danger { color: var(--red); }
-  .chip-value.ok { color: var(--green); }
+  .chip-value.ok     { color: var(--green); }
+  .chip-value.info   { color: var(--purple); }
 
-  /* ── KYB ALERT BOX ── */
-  .kyb-alert {
-    background: #1c1408;
-    border: 1px solid #92400e;
+  /* ── ALERTS ── */
+  .alert {
     border-radius: 8px;
     padding: 12px 16px;
-    margin-bottom: 24px;
+    margin-bottom: 14px;
     font-size: 13px;
-    color: var(--yellow);
     display: flex;
     align-items: flex-start;
     gap: 10px;
   }
-  .kyb-alert .icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+  .alert .icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+  .alert-kyb  { background: #1c1408; border: 1px solid #92400e; color: var(--yellow); }
+  .alert-syb  { background: #1a0a2e; border: 1px solid #6b21a8; color: var(--purple); }
 
   /* ── SECTION TITLE ── */
   .section-title {
@@ -193,15 +166,10 @@
     padding-bottom: 8px;
     border-bottom: 1px solid var(--border);
   }
-  .section-title:first-child { margin-top: 0; }
 
   /* ── TABLE ── */
   .table-wrap { overflow-x: auto; }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13px;
-  }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
   thead th {
     background: var(--bg3);
     color: var(--muted);
@@ -218,200 +186,51 @@
   thead th:first-child { text-align: left; }
   tbody tr { border-bottom: 1px solid var(--border); transition: background 0.15s; }
   tbody tr:hover { background: var(--bg3); }
-  tbody td {
-    padding: 9px 12px;
-    text-align: right;
-    font-family: var(--mono);
-    font-size: 12px;
-  }
-  tbody td:first-child {
-    text-align: left;
-    font-family: var(--sans);
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text);
-  }
-  .num-pos { color: var(--text); }
-  .num-neg { color: var(--red); }
+  tbody td { padding: 9px 12px; text-align: right; font-family: var(--mono); font-size: 12px; }
+  tbody td:first-child { text-align: left; font-family: var(--sans); font-size: 13px; font-weight: 500; color: var(--text); }
+  .num-pos  { color: var(--text); }
+  .num-neg  { color: var(--red); }
   .num-zero { color: var(--muted); }
 
-  /* KYB status badge */
+  /* ── BADGES ── */
   .badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 11px;
-    font-weight: 500;
-    font-family: var(--mono);
-    white-space: nowrap;
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 8px; border-radius: 4px;
+    font-size: 11px; font-weight: 500;
+    font-family: var(--mono); white-space: nowrap;
   }
   .badge-red    { background: var(--red-bg);    color: var(--red);    border: 1px solid #7f1d1d; }
   .badge-yellow { background: var(--yellow-bg); color: var(--yellow); border: 1px solid #78350f; }
   .badge-green  { background: var(--green-bg);  color: var(--green);  border: 1px solid #14532d; }
+  .badge-purple { background: var(--purple-bg); color: var(--purple); border: 1px solid #6b21a8; }
   .badge-muted  { background: var(--bg3);       color: var(--muted);  border: 1px solid var(--border); }
-  .badge-purple { background: #2e1065;          color: #a78bfa;       border: 1px solid #4c1d95; }
 
-  /* ── SYB ALERT BOX ── */
-  .syb-alert {
-    background: #1a0a2e;
-    border: 1px solid #4c1d95;
-    border-radius: 8px;
-    padding: 12px 16px;
-    margin-bottom: 24px;
-    font-size: 13px;
-    color: #a78bfa;
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-  }
-  .syb-alert .icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
-
-  /* ── ACTION ROW ── */
-  .action-row {
-    display: flex;
-    gap: 10px;
-    margin-top: 28px;
-    flex-wrap: wrap;
-  }
+  /* ── BUTTONS ── */
+  .action-row { display: flex; gap: 10px; margin-top: 28px; flex-wrap: wrap; }
   .btn {
-    padding: 9px 18px;
-    border-radius: 6px;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    border: none;
-    display: flex;
-    align-items: center;
-    gap: 6px;
+    padding: 9px 18px; border-radius: 6px;
+    font-size: 13px; font-weight: 500;
+    cursor: pointer; border: none;
+    display: flex; align-items: center; gap: 6px;
     transition: all 0.2s;
   }
-  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary   { background: var(--accent); color: #fff; }
   .btn-primary:hover { background: var(--accent2); }
   .btn-secondary { background: var(--bg3); color: var(--text); border: 1px solid var(--border); }
   .btn-secondary:hover { background: var(--border); }
 
-  /* ── ERROR ── */
-  .error-box {
-    background: var(--red-bg);
-    border: 1px solid #7f1d1d;
-    border-radius: 8px;
-    padding: 12px 16px;
-    color: var(--red);
-    font-size: 13px;
-    margin-top: 12px;
-    display: none;
-  }
-
-  /* ── SPINNER ── */
+  /* ── SPINNER & ERROR ── */
   .spinner {
-    display: none;
-    width: 20px; height: 20px;
-    border: 2px solid var(--border);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin 0.7s linear infinite;
+    display: none; width: 20px; height: 20px;
+    border: 2px solid var(--border); border-top-color: var(--accent);
+    border-radius: 50%; animation: spin 0.7s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
-
-  /* ── FOOTER GUIDE ── */
-  .footer-guide {
-    margin-top: 60px;
-    border-top: 1px solid var(--border);
-    padding: 40px 32px 48px;
-    background: var(--bg2);
+  .error-box {
+    background: var(--red-bg); border: 1px solid #7f1d1d;
+    border-radius: 8px; padding: 12px 16px; color: var(--red);
+    font-size: 13px; margin-top: 12px; display: none;
   }
-  .guide-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 40px;
-    max-width: 960px;
-  }
-  @media (max-width: 700px) {
-    .guide-grid { grid-template-columns: 1fr; }
-  }
-  .guide-block { display: flex; flex-direction: column; gap: 14px; }
-  .guide-title {
-    font-family: var(--mono);
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    padding-bottom: 10px;
-    border-bottom: 1px solid var(--border);
-  }
-  .guide-steps {
-    list-style: none;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-  .guide-steps li {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    font-size: 13px;
-    color: var(--text);
-    line-height: 1.5;
-  }
-  .step-num {
-    flex-shrink: 0;
-    width: 20px; height: 20px;
-    background: var(--accent);
-    color: #fff;
-    border-radius: 50%;
-    font-size: 11px;
-    font-weight: 600;
-    display: flex; align-items: center; justify-content: center;
-    margin-top: 1px;
-  }
-  .warn-tag {
-    display: inline-block;
-    margin-left: 6px;
-    padding: 1px 7px;
-    background: var(--yellow-bg);
-    color: var(--yellow);
-    border: 1px solid #78350f;
-    border-radius: 4px;
-    font-size: 11px;
-    font-weight: 500;
-  }
-  .guide-note {
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 10px 14px;
-    font-size: 12px;
-    color: var(--muted);
-    line-height: 1.6;
-  }
-  .guide-note b { color: var(--text); }
-  .mono {
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--accent);
-  }
-  .guide-output-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-  .output-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    font-size: 13px;
-    color: var(--text);
-    line-height: 1.5;
-  }
-  .output-icon {
-    font-size: 18px;
-    flex-shrink: 0;
-    margin-top: 1px;
-  }
-  .muted-text { color: var(--muted); font-size: 12px; }
 </style>
 </head>
 <body>
@@ -441,1044 +260,913 @@
 <div id="results"></div>
 
 <script>
-// ─── DRAG & DROP ───────────────────────────────────────────────
-const dropZone = document.getElementById('dropZone');
-const fileInput = document.getElementById('fileInput');
+'use strict';
 
-dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
-dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
-dropZone.addEventListener('drop', e => {
-  e.preventDefault();
-  dropZone.classList.remove('drag-over');
-  const file = e.dataTransfer.files[0];
-  if (file) processFile(file);
-});
-fileInput.addEventListener('change', e => {
-  if (e.target.files[0]) processFile(e.target.files[0]);
-});
+// ═══════════════════════════════════════════════════════════════
+// SECTION 1 — CONSTANTS & CONFIG
+// ═══════════════════════════════════════════════════════════════
 
-// ─── FILE PROCESSING ──────────────────────────────────────────
-function processFile(file) {
-  showSpinner(true);
-  hideError();
+const TAX_ORDER = ['MV', 'ƏDVQR', 'ƏDV', 'ÖMV', 'HŞƏV', 'VAHID MUZDLU'];
+
+// Declaration patterns that count as filed returns (Ödəniş excluded via opType check)
+// CARİ(ARAYIS) is intentionally excluded
+const DECL_PATTERN = /CARİ\(B\)|DƏQİQLƏŞMİŞ\(B\)|DƏQİQLƏŞDİRİLMİŞ\(B\)/;
+
+// ═══════════════════════════════════════════════════════════════
+// SECTION 2 — FILE I/O
+// ═══════════════════════════════════════════════════════════════
+
+function initDropZone() {
+  const dropZone = document.getElementById('dropZone');
+  const fileInput = document.getElementById('fileInput');
+
+  dropZone.addEventListener('dragover', e => {
+    e.preventDefault();
+    dropZone.classList.add('drag-over');
+  });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) handleFile(file);
+  });
+  fileInput.addEventListener('change', e => {
+    if (e.target.files[0]) handleFile(e.target.files[0]);
+  });
+}
+
+function handleFile(file) {
+  ui.showSpinner(true);
+  ui.hideError();
   const reader = new FileReader();
   reader.onload = e => {
     try {
       const html = e.target.result;
-      const data = parseStatement(html);
-      renderResults(data);
-    } catch(err) {
-      showError('Fayl oxunarkən xəta baş verdi: ' + err.message);
+      const data = Parser.parse(html);
+      Renderer.render(data);
+      // store for XLSX export
+      window._analysisData = data;
+    } catch (err) {
+      ui.showError('Fayl oxunarkən xəta baş verdi: ' + err.message);
+      console.error(err);
     }
-    showSpinner(false);
+    ui.showSpinner(false);
+  };
+  reader.onerror = () => {
+    ui.showError('Fayl oxuna bilmədi.');
+    ui.showSpinner(false);
   };
   reader.readAsText(file, 'iso-8859-1');
 }
 
-// ─── PARSER ───────────────────────────────────────────────────
-function parseStatement(html) {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(html, 'text/html');
+// ═══════════════════════════════════════════════════════════════
+// SECTION 3 — PARSER
+// Responsibility: raw HTML → structured AnalysisData object
+// ═══════════════════════════════════════════════════════════════
 
-  // Company info
-  const boldTags = doc.querySelectorAll('b');
-  let companyRaw = '';
-  for (const b of boldTags) {
-    const t = b.textContent.trim();
-    if (t.includes('VÖEN') || t.length > 10) { companyRaw = t; break; }
+const Parser = (() => {
+
+  // ── 3.1 Entry point ──────────────────────────────────────────
+  function parse(html) {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const companyInfo = extractCompanyInfo(doc);
+    const summaryData = extractSummaryTable(doc);
+    const rawRows     = extractRawRows(doc);
+    const taxMap      = buildTaxMap(rawRows);
+    const taxes       = finalizeTaxes(taxMap);
+
+    return {
+      ...companyInfo,
+      period:    summaryData['Əhatə etdiyi dövr']  || '',
+      printDate: summaryData['Çap olunma tarixi']  || '',
+      totalDebt: parseAmount(summaryData['Cəmi ödənməli borc'] || '0'),
+      taxes,
+      kybActive:    taxes.filter(t => t.kyb_status === 'active'),
+      kybCancelled: taxes.filter(t => t.kyb_status === 'cancelled'),
+      sybActive:    taxes.filter(t => t.syb_status === 'active'),
+      sybCancelled: taxes.filter(t => t.syb_status === 'cancelled'),
+      rawRows,
+    };
   }
-  const voenMatch = companyRaw.match(/VÖEN[:\s]*(\d+)/);
-  const voen = voenMatch ? voenMatch[1] : '';
-  const companyName = companyRaw.replace(/\(VÖEN[^)]*\)/, '').replace(/VÖEN[:\s]*\d+/, '').trim().replace(/\s+/g, ' ');
 
-  // Summary table (last table)
-  const tables = doc.querySelectorAll('table');
-  const summaryTable = tables[tables.length - 1];
-  const summaryData = {};
-  if (summaryTable) {
+  // ── 3.2 Extract company name & VÖEN ──────────────────────────
+  function extractCompanyInfo(doc) {
+    let companyRaw = '';
+    for (const b of doc.querySelectorAll('b')) {
+      const t = b.textContent.trim();
+      if (t.includes('VÖEN') || t.length > 10) { companyRaw = t; break; }
+    }
+    const voenMatch  = companyRaw.match(/VÖEN[:\s]*(\d+)/);
+    const voen       = voenMatch ? voenMatch[1] : '';
+    const companyName = companyRaw
+      .replace(/\(VÖEN[^)]*\)/, '')
+      .replace(/VÖEN[:\s]*\d+/, '')
+      .trim().replace(/\s+/g, ' ');
+    return { companyName, voen };
+  }
+
+  // ── 3.3 Extract summary key-value table (last table) ─────────
+  function extractSummaryTable(doc) {
+    const tables = doc.querySelectorAll('table');
+    const summaryTable = tables[tables.length - 1];
+    const result = {};
+    if (!summaryTable) return result;
     for (const row of summaryTable.querySelectorAll('tr')) {
       const cells = [...row.querySelectorAll('td')].map(td => td.textContent.trim());
-      if (cells.length >= 2 && cells[0] && cells[1]) {
-        summaryData[cells[0]] = cells[1];
-      }
+      if (cells.length >= 2 && cells[0]) result[cells[0]] = cells[1];
     }
-  }
-  const period = summaryData['Əhatə etdiyi dövr'] || '';
-  const printDate = summaryData['Çap olunma tarixi'] || '';
-  const totalDebt = parseAmount(summaryData['Cəmi ödənməli borc'] || '0');
-
-  // Tax table — second table (index 1)
-  // Find the table with "Yazılış tarixi" header and 8 columns
-  let taxTable = null;
-  for (const t of tables) {
-    const firstRow = t.querySelector('tr');
-    if (!firstRow) continue;
-    const headers = [...firstRow.querySelectorAll('td')].map(td => td.textContent.trim());
-    if (headers.includes('Yazılış tarixi') && headers.includes('Əməliyyat adı') && headers.includes('Miqdar (Manat)')) {
-      taxTable = t;
-      break;
-    }
-  }
-  if (!taxTable) throw new Error('Vergi cədvəli tapılmadı');
-
-  // Capture raw headers and all data rows for clean export
-  const allTrRows = [...taxTable.querySelectorAll('tr')];
-  const rawHeaders = allTrRows.length > 0
-    ? [...allTrRows[0].querySelectorAll('td')].map(td => td.textContent.trim())
-    : [];
-  const rawRows = [];
-
-  const rows = allTrRows.slice(1);
-  const records = [];
-  for (const row of rows) {
-    const cells = [...row.querySelectorAll('td')].map(td => td.textContent.trim());
-    if (cells.length < 5) continue;
-    const opName = cells[1];
-    const opType = cells[2];
-    const amount = parseAmount(cells[4]);
-    if (!opName || !opType) continue;
-
-    rawRows.push(cells);
-
-    const key = extractTaxKey(opName);
-    const kyb = opName.includes('KYB');
-    const kybl = opName.includes('KYBL');
-    const syb = opName.includes('SYB') && !kyb;
-    const sybl = false;
-    const yazilishDate = cells[0]; // Yazılış tarixi — used for VAHID MUZDLU grouping
-
-    records.push({ opName, opType, amount, key, kyb, kybl, syb, sybl, yazilishDate });
+    return result;
   }
 
-  // Aggregate by key
-  const taxMap = {};
-  for (const r of records) {
-    if (r.key === 'Diger') continue;
-    if (!taxMap[r.key]) {
-      taxMap[r.key] = {
-        key: r.key,
-        hesablama: 0, azalma: 0,
-        kyb_hesablama: 0, kyb_azalma: 0,
-        syb_hesablama: 0, syb_azalma: 0,
-        has_kyb: false, has_kybl: false,
-        has_syb: false,
-        decl_count: 0,
-        vahidDates: new Set() // for VAHID MUZDLU: group by yazılış tarixi
-      };
+  // ── 3.4 Find tax table and extract raw rows ───────────────────
+  function extractRawRows(doc) {
+    const taxTable = findTaxTable(doc);
+    if (!taxTable) throw new Error('Vergi cədvəli tapılmadı');
+
+    const headerRow = taxTable.querySelector('tr');
+    const headers   = [...headerRow.querySelectorAll('td')].map(td => td.textContent.trim());
+
+    const rows = [...taxTable.querySelectorAll('tr')].slice(1);
+    const result = [];
+    for (const row of rows) {
+      const cells = [...row.querySelectorAll('td')].map(td => td.textContent.trim());
+      if (cells.length < 5) continue;
+      result.push({
+        date:    cells[0],
+        opName:  cells[1],
+        opType:  cells[2], // Hesablama | Azalma | Ödəniş
+        col3:    cells[3],
+        amount:  parseAmount(cells[4]),
+      });
     }
-    const t = taxMap[r.key];
-    if (r.kyb) {
-      t.has_kyb = true;
-      if (r.kybl) {
-        t.has_kybl = true;
-        t.kyb_azalma += r.amount;
-      } else {
-        if (r.opType === 'Hesablama') t.kyb_hesablama += r.amount;
-        else if (r.opType === 'Azalma') t.kyb_azalma += r.amount;
-      }
-    } else if (r.syb) {
-      t.has_syb = true;
-      if (r.opType === 'Hesablama') t.syb_hesablama += r.amount;
-      else if (r.opType === 'Azalma') t.syb_azalma += r.amount;
-    } else {
-      if (r.opType === 'Hesablama') t.hesablama += r.amount;
-      else if (r.opType === 'Azalma') t.azalma += r.amount;
-      if (/CARİ\(B\)|DƏQİQLƏŞMİŞ\(B\)|DƏQİQLƏŞDİRİLMİŞ\(B\)/.test(r.opName) && r.opType !== 'Ödəniş') {
-        if (r.key.startsWith('VAHID MUZDLU')) {
-          // Quarterly report: 3 rows per submission (one per month)
-          // Group by yazılış tarixi + declaration type (CARİ vs DƏQİQLƏŞMİŞ)
-          const declType = r.opName.match(/CARİ\(B\)|DƏQİQLƏŞMİŞ\(B\)|DƏQİQLƏŞDİRİLMİŞ\(B\)/)?.[0] || '';
-          t.vahidDates.add(r.yazilishDate + '|' + declType);
+    return result;
+  }
+
+  function findTaxTable(doc) {
+    for (const t of doc.querySelectorAll('table')) {
+      const firstRow = t.querySelector('tr');
+      if (!firstRow) continue;
+      const headers = [...firstRow.querySelectorAll('td')].map(td => td.textContent.trim());
+      if (
+        headers.includes('Yazılış tarixi') &&
+        headers.includes('Əməliyyat adı') &&
+        headers.includes('Miqdar (Manat)')
+      ) return t;
+    }
+    return null;
+  }
+
+  // ── 3.5 Build aggregated tax map ─────────────────────────────
+  function buildTaxMap(rawRows) {
+    const taxMap = {};
+
+    for (const r of rawRows) {
+      const { opName, opType, amount, date } = r;
+      if (!opName || !opType) continue;
+
+      const key  = extractTaxKey(opName);
+      if (key === 'Diger') continue;
+
+      const isKyb  = opName.includes('KYB');
+      const isKybl = opName.includes('KYBL');
+      // SYB only if KYB is NOT present (per spec)
+      const isSyb  = opName.includes('SYB') && !isKyb;
+
+      if (!taxMap[key]) taxMap[key] = newTaxEntry(key);
+      const entry = taxMap[key];
+
+      // ── Accumulate amounts by category ──────────────────────
+      if (isKyb) {
+        entry.has_kyb = true;
+        // KYBL = ləğv azalması — always to kyb_azalma regardless of opType
+        if (isKybl) {
+          entry.has_kybl = true;
+          entry.kyb_azalma += amount;
         } else {
-          t.decl_count++;
+          if (opType === 'Hesablama') entry.kyb_hesablama += amount;
+          else if (opType === 'Azalma') entry.kyb_azalma += amount;
+        }
+      } else if (isSyb) {
+        entry.has_syb = true;
+        if (opType === 'Hesablama') entry.syb_hesablama += amount;
+        else if (opType === 'Azalma') entry.syb_azalma += amount;
+      } else {
+        if (opType === 'Hesablama') entry.hesablama += amount;
+        else if (opType === 'Azalma') entry.azalma += amount;
+
+        // ── Declaration counting ─────────────────────────────
+        // VAHID MUZDLU: group by date|declType to avoid triple-counting
+        // (portal emits 3 rows per quarter declaration — one per month)
+        if (DECL_PATTERN.test(opName) && opType !== 'Ödəniş') {
+          const declTypeMatch = opName.match(DECL_PATTERN);
+          if (declTypeMatch) {
+            if (key.startsWith('VAHID MUZDLU')) {
+              // Deduplicate by (date, declType) combination
+              entry.vahidDates.add(`${date}|${declTypeMatch[0]}`);
+            } else {
+              entry.declNames.add(opName);
+            }
+          }
         }
       }
     }
+
+    return taxMap;
   }
 
-  // For VAHID MUZDLU: decl_count = number of unique yazılış tarixi dates
-  for (const t of Object.values(taxMap)) {
-    if (t.key.startsWith('VAHID MUZDLU') && t.vahidDates.size > 0) {
-      t.decl_count = t.vahidDates.size;
+  function newTaxEntry(key) {
+    return {
+      key,
+      hesablama: 0, azalma: 0,
+      kyb_hesablama: 0, kyb_azalma: 0, has_kyb: false, has_kybl: false,
+      syb_hesablama: 0, syb_azalma: 0, has_syb: false,
+      declNames:   new Set(),   // for non-VAHID taxes
+      vahidDates:  new Set(),   // for VAHID MUZDLU deduplication
+    };
+  }
+
+  // ── 3.6 Compute derived fields & status ──────────────────────
+  function finalizeTaxes(taxMap) {
+    for (const t of Object.values(taxMap)) {
+      // KYB
+      t.kyb_net    = t.kyb_hesablama - t.kyb_azalma;
+      t.kyb_status = !t.has_kyb ? 'none' : t.kyb_net <= 0 ? 'cancelled' : 'active';
+
+      // SYB
+      t.syb_net    = t.syb_hesablama - t.syb_azalma;
+      t.syb_status = !t.has_syb ? 'none' : t.syb_net <= 0 ? 'cancelled' : 'active';
+
+      // Client
+      t.client_net = t.hesablama - t.azalma;
+
+      // Totals
+      t.total_hesablama = t.hesablama + t.kyb_hesablama + t.syb_hesablama;
+      t.total_azalma    = t.azalma    + t.kyb_azalma    + t.syb_azalma;
+      t.total_net       = t.total_hesablama - t.total_azalma;
+
+      // Declaration count
+      t.decl_count = t.key.startsWith('VAHID MUZDLU')
+        ? t.vahidDates.size
+        : t.declNames.size;
     }
+
+    return Object.values(taxMap)
+      .filter(t => t.total_net !== 0 || t.has_kyb || t.has_syb)
+      .sort((a, b) => taxSortKey(a.key).localeCompare(taxSortKey(b.key)));
   }
 
-  // Compute KYB and SYB status for each tax
-  for (const t of Object.values(taxMap)) {
-    // KYB
-    const kyb_net = t.kyb_hesablama - t.kyb_azalma;
-    if (!t.has_kyb) {
-      t.kyb_status = 'none';
-    } else if (kyb_net <= 0) {
-      t.kyb_status = 'cancelled';
-    } else {
-      t.kyb_status = 'active';
+  // ── 3.7 extractTaxKey — maps opName → canonical period key ───
+  function extractTaxKey(op) {
+    op = op.trim();
+
+    // Payments — skip entirely
+    if (/^(Ödəmə tapşırığı|Sərəncam)\b/.test(op)) return 'Diger';
+
+    let m;
+
+    // ƏDVQR YYYY/MM  (must check before ƏDV)
+    m = op.match(/^(ƏDVQR\s+\d{4}\/\d{2})/);
+    if (m) return m[1];
+
+    // ƏDV YYYY/MM
+    m = op.match(/^(ƏDV\s+\d{4}\/\d{2})/);
+    if (m) return m[1];
+
+    // ÖMV YYYY N.? Rüb
+    m = op.match(/^(ÖMV\s+\d{4}\s+\d+\.?\s*Rüb)/);
+    if (m) return m[1].replace(/\s+/g, ' ').trim();
+
+    // VAHID MUZDLU YYYY N.? Rüb
+    m = op.match(/^(VAHID MUZDLU\s+\d{4}\s+\d+\.?\s*Rüb)/);
+    if (m) return m[1].replace(/\s+/g, ' ').trim();
+
+    // ƏV - N.Rüb YYYY → HŞƏV - YYYY  (quarterly avans)
+    m = op.match(/^ƏV\s*[-–]\s*\d+\.?\s*Rüb\s+(\d{4})/);
+    if (m) return `HŞƏV - ${m[1]}`;
+
+    // HŞƏV YYYY → HŞƏV - YYYY
+    m = op.match(/^HŞƏV\s+(\d{4})/);
+    if (m) return `HŞƏV - ${m[1]}`;
+
+    // MV (mənfəət vergisi) — starts with "MV" but not "ÖMV"
+    m = op.match(/^MV[\s\-]/);
+    if (m) {
+      const yr = op.match(/(\d{4})/);
+      return yr ? `MV - ${yr[1]}` : 'Diger';
     }
-    t.kyb_net = kyb_net;
 
-    // SYB
-    const syb_net = t.syb_hesablama - t.syb_azalma;
-    if (!t.has_syb) {
-      t.syb_status = 'none';
-    } else if (syb_net <= 0) {
-      t.syb_status = 'cancelled';
-    } else {
-      t.syb_status = 'active';
+    // ── Universal fallback ─────────────────────────────────────
+
+    // TAX YYYY/MM
+    m = op.match(/^([A-ZƏÜÖĞIİŞÇ][A-ZƏÜÖĞIİŞÇ\s]{0,20}?)\s+(\d{4}\/\d{2})\b/);
+    if (m) return `${m[1].trim()} ${m[2]}`;
+
+    // TAX YYYY N. Rüb
+    m = op.match(/^([A-ZƏÜÖĞIİŞÇ][A-ZƏÜÖĞIİŞÇ\s]{0,20}?)\s+(\d{4})\s+\d+\.?\s*Rüb/);
+    if (m) {
+      const qm = op.match(/(\d+)\.?\s*Rüb/);
+      return `${m[1].trim()} ${m[2]} ${qm[1]}. Rüb`;
     }
-    t.syb_net = syb_net;
 
-    t.client_net = t.hesablama - t.azalma;
-    t.total_hesablama = t.hesablama + t.kyb_hesablama + t.syb_hesablama;
-    t.total_azalma    = t.azalma    + t.kyb_azalma    + t.syb_azalma;
-    t.total_net       = t.total_hesablama - t.total_azalma;
+    // TAX YYYY (annual)
+    m = op.match(/^([A-ZƏÜÖĞIİŞÇ][A-ZƏÜÖĞIİŞÇ\s]{0,20}?)\s+(\d{4})\b/);
+    if (m) return `${m[1].trim()} - ${m[2]}`;
+
+    return 'Diger';
   }
 
-  const taxes = Object.values(taxMap)
-    .filter(t => t.total_net !== 0 || t.has_kyb || t.has_syb)
-    .sort((a, b) => taxSortKey(a.key).localeCompare(taxSortKey(b.key)));
-
-  const kybActive    = taxes.filter(t => t.kyb_status === 'active');
-  const kybCancelled = taxes.filter(t => t.kyb_status === 'cancelled');
-  const sybActive    = taxes.filter(t => t.syb_status === 'active');
-  const sybCancelled = taxes.filter(t => t.syb_status === 'cancelled');
-
-  return {
-    companyName, voen, period, printDate, totalDebt,
-    taxes, kybActive, kybCancelled, sybActive, sybCancelled,
-    summaryData, rawHeaders, rawRows
-  };
-}
-
-// ─── HELPERS ──────────────────────────────────────────────────
-function parseAmount(s) {
-  if (!s) return 0;
-  s = s.trim();
-  if (!s) return 0;
-  // Format: "8.415,00" or "679,06"
-  return parseFloat(s.replace(/\./g, '').replace(',', '.')) || 0;
-}
-
-function extractTaxKey(op) {
-  op = op.trim();
-
-  // Явные платёжки → Diger
-  if (/^(Ödəmə tapşırığı|Sərəncam)\b/.test(op)) return 'Diger';
-
-  // ƏDVQR YYYY/MM (before ƏDV to avoid overlap)
-  let m = op.match(/^(ƏDVQR\s+\d{4}\/\d{2})/);
-  if (m) return m[1];
-
-  // ƏDV YYYY/MM
-  m = op.match(/^(ƏDV\s+\d{4}\/\d{2})/);
-  if (m) return m[1];
-
-  // ÖMV YYYY N.? Rüb
-  m = op.match(/^(ÖMV\s+\d{4}\s+\d+\.?\s*Rüb)/);
-  if (m) return m[1].replace(/\s+/g, ' ').trim();
-
-  // VAHID MUZDLU YYYY N.? Rüb
-  m = op.match(/^(VAHID MUZDLU\s+\d{4}\s+\d+\.?\s*Rüb)/);
-  if (m) return m[1].replace(/\s+/g, ' ').trim();
-
-  // ƏV - N.Rüb YYYY (quarterly avans of HŞƏV) → normalize to "HŞƏV - YYYY"
-  m = op.match(/^ƏV\s*[-–]\s*\d+\.?\s*Rüb\s+(\d{4})/);
-  if (m) return `HŞƏV - ${m[1]}`;
-
-  // HŞƏV YYYY → "HŞƏV - YYYY"
-  m = op.match(/^HŞƏV\s+(\d{4})/);
-  if (m) return `HŞƏV - ${m[1]}`;
-
-  // MV (mənfəət vergisi) — starts with "MV" but not "ÖMV"
-  m = op.match(/^MV[\s\-]/);
-  if (m) {
-    const yr = op.match(/(\d{4})/);
-    if (yr) return `MV - ${yr[1]}`;
-  }
-
-  // ─── Universal fallback ────────────────────────────────────
-  // TAX YYYY/MM
-  m = op.match(/^([A-ZƏÜÖĞIİŞÇ][A-ZƏÜÖĞIİŞÇ\s]{0,20}?)\s+(\d{4}\/\d{2})\b/);
-  if (m) return `${m[1].trim()} ${m[2]}`;
-
-  // TAX YYYY N. Rüb
-  m = op.match(/^([A-ZƏÜÖĞIİŞÇ][A-ZƏÜÖĞIİŞÇ\s]{0,20}?)\s+(\d{4})\s+\d+\.?\s*Rüb/);
-  if (m) {
-    const qm = op.match(/(\d+)\.?\s*Rüb/);
-    return `${m[1].trim()} ${m[2]} ${qm[1]}. Rüb`;
-  }
-
-  // TAX YYYY (annual)
-  m = op.match(/^([A-ZƏÜÖĞIİŞÇ][A-ZƏÜÖĞIİŞÇ\s]{0,20}?)\s+(\d{4})\b/);
-  if (m) return `${m[1].trim()} - ${m[2]}`;
-
-  return 'Diger';
-}
-
-// ─── SORT ORDER ───────────────────────────────────────────────
-const TAX_ORDER = ['MV', 'ƏDVQR', 'ƏDV', 'ÖMV', 'HŞƏV', 'VAHID MUZDLU'];
-
-function taxSortKey(key) {
-  // Find which group this belongs to
-  for (let i = 0; i < TAX_ORDER.length; i++) {
-    if (key.startsWith(TAX_ORDER[i])) {
-      // Extract year and period for secondary sort
-      const yr = key.match(/(\d{4})/);
-      const mo = key.match(/\/(\d{2})/);
-      const rub = key.match(/(\d+)\.\s*Rüb/);
-      const year = yr ? parseInt(yr[1]) : 9999;
-      const month = mo ? parseInt(mo[1]) : (rub ? parseInt(rub[1]) * 3 : 0);
-      return `${String(i).padStart(2,'0')}_${year}_${String(month).padStart(2,'0')}_${key}`;
+  // ── 3.8 Sort key ──────────────────────────────────────────────
+  function taxSortKey(key) {
+    for (let i = 0; i < TAX_ORDER.length; i++) {
+      if (key.startsWith(TAX_ORDER[i])) {
+        const yr   = key.match(/(\d{4})/);
+        const mo   = key.match(/\/(\d{2})/);
+        const rub  = key.match(/(\d+)\.\s*Rüb/);
+        const year  = yr  ? parseInt(yr[1])  : 9999;
+        const month = mo  ? parseInt(mo[1])  : rub ? parseInt(rub[1]) * 3 : 0;
+        return `${String(i).padStart(2,'0')}_${year}_${String(month).padStart(2,'0')}_${key}`;
+      }
     }
-  }
-  // Unknown tax types go last, sorted alphabetically
-  return `99_${key}`;
-}
-
-function fmt(n) {
-  if (n === 0) return '<span class="num-zero">—</span>';
-  const formatted = Math.abs(n).toLocaleString('az-AZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  return n < 0
-    ? `<span class="num-neg">-${formatted}</span>`
-    : `<span class="num-pos">${formatted}</span>`;
-}
-
-function kybBadge(status, net) {
-  if (status === 'none') return '<span class="badge badge-muted">—</span>';
-  if (status === 'cancelled') return '<span class="badge badge-green">✓ Ləğv</span>';
-  const fmtNet = net.toLocaleString('az-AZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  return `<span class="badge badge-red">⚠ ${fmtNet}</span>`;
-}
-
-function sybBadge(status, net) {
-  if (status === 'none') return '<span class="badge badge-muted">—</span>';
-  if (status === 'cancelled') return '<span class="badge badge-green">✓ Ləğv</span>';
-  const fmtNet = net.toLocaleString('az-AZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  return `<span class="badge badge-purple">🔍 ${fmtNet}</span>`;
-}
-
-// ─── RENDER ───────────────────────────────────────────────────
-function renderResults(data) {
-  document.getElementById('drop-section').style.display = 'none';
-  const el = document.getElementById('results');
-  el.style.display = 'block';
-
-  const kybActiveCount = data.kybActive.length;
-  const kybActiveTotal = data.kybActive.reduce((s, t) => s + t.kyb_net, 0);
-  const sybActiveCount = data.sybActive.length;
-  const sybActiveTotal = data.sybActive.reduce((s, t) => s + t.syb_net, 0);
-
-  // KYB alert
-  let kybAlertHtml = '';
-  if (kybActiveCount > 0) {
-    const names = data.kybActive.map(t => `<b>${t.key}</b>`).join(', ');
-    const total = kybActiveTotal.toLocaleString('az-AZ', { minimumFractionDigits: 2 });
-    kybAlertHtml = `
-      <div class="kyb-alert">
-        <span class="icon">⚠️</span>
-        <div>
-          <b>Aktiv kameral yoxlama (KYB) aşkar edildi!</b><br>
-          ${names} üzrə cəmi <b>${total} ₼</b> məbləğində kameral başlama var.
-          Vergi ödəyicisi məlumatlandırılıbmı?
-        </div>
-      </div>`;
+    return `99_${key}`;
   }
 
-  // SYB alert
-  let sybAlertHtml = '';
-  if (sybActiveCount > 0) {
-    const names = data.sybActive.map(t => `<b>${t.key}</b>`).join(', ');
-    const total = sybActiveTotal.toLocaleString('az-AZ', { minimumFractionDigits: 2 });
-    sybAlertHtml = `
-      <div class="syb-alert">
-        <span class="icon">🔍</span>
-        <div>
-          <b>Aktiv səyyar vergi yoxlaması (SYB) aşkar edildi!</b><br>
-          ${names} üzrə cəmi <b>${total} ₼</b> məbləğində səyyar yoxlama var.
-          Vergi ödəyicisi məlumatlandırılıbmı?
-        </div>
-      </div>`;
+  // ── 3.9 Amount parser ─────────────────────────────────────────
+  // Handles "8.415,00" (AZ/DE locale) → 8415.00
+  function parseAmount(s) {
+    if (!s) return 0;
+    s = s.trim();
+    return parseFloat(s.replace(/\./g, '').replace(',', '.')) || 0;
   }
 
-  const debtClass = data.totalDebt > 0 ? 'danger' : 'ok';
+  return { parse };
+})();
 
-  el.innerHTML = `
-    <div class="company-card">
-      <div>
-        <div class="company-name">${data.companyName}</div>
-        <div class="company-voen">VÖEN: ${data.voen}</div>
-      </div>
-      <div class="company-period">
-        <div>Çap tarixi: ${data.printDate}</div>
-        <div style="margin-top:2px">Dövr: ${data.period}</div>
-      </div>
-    </div>
 
-    ${kybAlertHtml}${sybAlertHtml}
+// ═══════════════════════════════════════════════════════════════
+// SECTION 4 — RENDERER
+// Responsibility: AnalysisData → DOM
+// ═══════════════════════════════════════════════════════════════
 
-    <div class="summary-row">
-      <div class="chip">
-        <div class="chip-label">Cəmi ödənməli borc</div>
-        <div class="chip-value ${debtClass}">${data.totalDebt.toLocaleString('az-AZ', {minimumFractionDigits:2})} ₼</div>
-      </div>
-      <div class="chip">
-        <div class="chip-label">Aktiv KYB sayı</div>
-        <div class="chip-value ${kybActiveCount > 0 ? 'danger' : 'ok'}">${kybActiveCount}</div>
-      </div>
-      <div class="chip">
-        <div class="chip-label">Aktiv KYB məbləği</div>
-        <div class="chip-value ${kybActiveTotal > 0 ? 'warn' : 'ok'}">${kybActiveTotal.toLocaleString('az-AZ', {minimumFractionDigits:2})} ₼</div>
-      </div>
-      <div class="chip">
-        <div class="chip-label">Aktiv SYB sayı</div>
-        <div class="chip-value ${sybActiveCount > 0 ? 'danger' : 'ok'}">${sybActiveCount}</div>
-      </div>
-      <div class="chip">
-        <div class="chip-label">Aktiv SYB məbləği</div>
-        <div class="chip-value ${sybActiveTotal > 0 ? 'warn' : 'ok'}">${sybActiveTotal.toLocaleString('az-AZ', {minimumFractionDigits:2})} ₼</div>
-      </div>
-      <div class="chip">
-        <div class="chip-label">Vergi növlərinin sayı</div>
-        <div class="chip-value">${data.taxes.length}</div>
-      </div>
-    </div>
+const Renderer = (() => {
 
-    <div class="section-title">Vergilər üzrə analiz</div>
-    <div class="table-wrap">
-      ${renderTaxTable(data.taxes)}
-    </div>
+  function render(data) {
+    document.getElementById('drop-section').style.display = 'none';
+    const el = document.getElementById('results');
+    el.style.display = 'block';
+    el.innerHTML = buildResultsHTML(data);
+  }
 
-    ${data.kybCancelled.length > 0 ? `
-    <div class="section-title">Ləğv edilmiş KYB-lər</div>
-    <div class="table-wrap">${renderCancelledTable(data.kybCancelled, 'KYB')}</div>
-    ` : ''}
+  // ── 4.1 Top-level HTML assembly ───────────────────────────────
+  function buildResultsHTML(data) {
+    const { kybActive, kybCancelled, sybActive, sybCancelled } = data;
+    const kybTotal = kybActive.reduce((s, t) => s + t.kyb_net, 0);
+    const sybTotal = sybActive.reduce((s, t) => s + t.syb_net, 0);
+    const debtClass = data.totalDebt > 0 ? 'danger' : 'ok';
 
-    ${data.sybCancelled.length > 0 ? `
-    <div class="section-title">Ləğv edilmiş SYB-lər</div>
-    <div class="table-wrap">${renderCancelledTable(data.sybCancelled, 'SYB')}</div>
-    ` : ''}
-
-    <div class="action-row">
-      <button class="btn btn-primary" onclick="downloadXLSX(window._data)">⬇ XLSX yüklə</button>
-      <button class="btn btn-secondary" onclick="location.reload()">↩ Yeni fayl</button>
-    </div>
-  `;
-
-  window._data = data;
-}
-
-function renderTaxTable(taxes) {
-  const rows = taxes.map(t => {
-    const declCell = t.decl_count > 0
-      ? `<span style="color:var(--accent);font-weight:600">${t.decl_count}</span>`
-      : `<span class="num-zero">—</span>`;
     return `
-    <tr>
-      <td>${t.key}</td>
-      <td style="text-align:center">${declCell}</td>
-      <td>${fmt(t.hesablama)}</td>
-      <td>${fmt(t.kyb_hesablama)}</td>
-      <td>${fmt(t.syb_hesablama)}</td>
-      <td>${fmt(t.total_hesablama)}</td>
-      <td>${fmt(t.azalma)}</td>
-      <td>${fmt(t.kyb_azalma)}</td>
-      <td>${fmt(t.syb_azalma)}</td>
-      <td>${fmt(t.total_azalma)}</td>
-      <td><b>${fmt(t.total_net)}</b></td>
-      <td>${kybBadge(t.kyb_status, t.kyb_net)}</td>
-      <td>${sybBadge(t.syb_status, t.syb_net)}</td>
-    </tr>`;
-  }).join('');
+      ${companyCardHTML(data)}
+      ${alertsHTML(kybActive, kybTotal, sybActive, sybTotal)}
+      ${chipsHTML(data, kybActive, kybTotal, sybActive, sybTotal, debtClass)}
+      <div class="section-title">Vergilər üzrə analiz</div>
+      <div class="table-wrap">${taxTableHTML(data.taxes)}</div>
+      ${kybCancelled.length > 0 ? `
+        <div class="section-title">Ləğv edilmiş KYB-lər</div>
+        <div class="table-wrap">${cancelledTableHTML(kybCancelled, 'kyb')}</div>
+      ` : ''}
+      ${sybCancelled.length > 0 ? `
+        <div class="section-title">Ləğv edilmiş SYB-lər</div>
+        <div class="table-wrap">${cancelledTableHTML(sybCancelled, 'syb')}</div>
+      ` : ''}
+      <div class="action-row">
+        <button class="btn btn-primary" onclick="XlsxExport.download(window._analysisData)">⬇ XLSX yüklə</button>
+        <button class="btn btn-secondary" onclick="location.reload()">↩ Yeni fayl</button>
+      </div>
+    `;
+  }
 
-  return `<table>
-    <thead>
+  // ── 4.2 Company card ──────────────────────────────────────────
+  function companyCardHTML(data) {
+    return `
+      <div class="company-card">
+        <div>
+          <div class="company-name">${esc(data.companyName)}</div>
+          <div class="company-voen">VÖEN: ${esc(data.voen)}</div>
+        </div>
+        <div class="company-period">
+          <div>Çap tarixi: ${esc(data.printDate)}</div>
+          <div style="margin-top:2px">Dövr: ${esc(data.period)}</div>
+        </div>
+      </div>`;
+  }
+
+  // ── 4.3 Alert boxes ───────────────────────────────────────────
+  function alertsHTML(kybActive, kybTotal, sybActive, sybTotal) {
+    let html = '';
+    if (kybActive.length > 0) {
+      const names = kybActive.map(t => `<b>${esc(t.key)}</b>`).join(', ');
+      const total = fmt(kybTotal).replace(/<[^>]+>/g, '');
+      html += `
+        <div class="alert alert-kyb">
+          <span class="icon">⚠️</span>
+          <div>
+            <b>Aktiv kameral yoxlama (KYB) aşkar edildi!</b><br>
+            ${names} üzrə cəmi <b>${fmtRaw(kybTotal)} ₼</b> məbləğində kameral başlama var.
+            Vergi ödəyicisi məlumatlandırılıbmı?
+          </div>
+        </div>`;
+    }
+    if (sybActive.length > 0) {
+      const names = sybActive.map(t => `<b>${esc(t.key)}</b>`).join(', ');
+      html += `
+        <div class="alert alert-syb">
+          <span class="icon">🔍</span>
+          <div>
+            <b>Aktiv səyyar yoxlama (SYB) aşkar edildi!</b><br>
+            ${names} üzrə cəmi <b>${fmtRaw(sybTotal)} ₼</b> məbləğində səyyar başlama var.
+          </div>
+        </div>`;
+    }
+    return html;
+  }
+
+  // ── 4.4 Summary chips ─────────────────────────────────────────
+  function chipsHTML(data, kybActive, kybTotal, sybActive, sybTotal, debtClass) {
+    const chips = [
+      { label: 'Cəmi ödənməli borc', value: `${fmtRaw(data.totalDebt)} ₼`, cls: debtClass },
+      { label: 'Aktiv KYB sayı',     value: kybActive.length,               cls: kybActive.length > 0 ? 'danger' : 'ok' },
+      { label: 'Aktiv KYB məbləği',  value: `${fmtRaw(kybTotal)} ₼`,        cls: kybTotal > 0 ? 'warn' : 'ok' },
+      { label: 'Aktiv SYB sayı',     value: sybActive.length,               cls: sybActive.length > 0 ? 'info' : 'ok' },
+      { label: 'Aktiv SYB məbləği',  value: `${fmtRaw(sybTotal)} ₼`,        cls: sybTotal > 0 ? 'info' : 'ok' },
+      { label: 'Vergi növlərinin sayı', value: data.taxes.length,            cls: '' },
+    ];
+    return `<div class="summary-row">${
+      chips.map(c => `
+        <div class="chip">
+          <div class="chip-label">${c.label}</div>
+          <div class="chip-value ${c.cls}">${c.value}</div>
+        </div>`).join('')
+    }</div>`;
+  }
+
+  // ── 4.5 Main tax table (13 columns) ──────────────────────────
+  // Columns: Tax | Decl | Müş-Hes | KYB-Hes | SYB-Hes | Cəmi-Hes |
+  //           Müş-Az | KYB-Az | SYB-Az | Cəmi-Az | Net | KYB | SYB
+  function taxTableHTML(taxes) {
+    const rows = taxes.map(t => {
+      const declCell = t.decl_count > 0
+        ? `<span style="color:var(--accent);font-weight:600">${t.decl_count}</span>`
+        : `<span class="num-zero">—</span>`;
+      return `
+        <tr>
+          <td>${esc(t.key)}</td>
+          <td style="text-align:center">${declCell}</td>
+          <td>${fmt(t.hesablama)}</td>
+          <td>${fmt(t.kyb_hesablama)}</td>
+          <td>${fmt(t.syb_hesablama)}</td>
+          <td>${fmt(t.total_hesablama)}</td>
+          <td>${fmt(t.azalma)}</td>
+          <td>${fmt(t.kyb_azalma)}</td>
+          <td>${fmt(t.syb_azalma)}</td>
+          <td>${fmt(t.total_azalma)}</td>
+          <td><b>${fmt(t.total_net)}</b></td>
+          <td>${statusBadgeHTML('kyb', t.kyb_status, t.kyb_net)}</td>
+          <td>${statusBadgeHTML('syb', t.syb_status, t.syb_net)}</td>
+        </tr>`;
+    }).join('');
+
+    return `
+      <table>
+        <thead>
+          <tr>
+            <th rowspan="2" style="vertical-align:middle;text-align:left">Vergi / Dövr</th>
+            <th rowspan="2" style="vertical-align:middle">Bəyannamə</th>
+            <th colspan="4" style="text-align:center;color:var(--accent)">Hesablama</th>
+            <th colspan="4" style="text-align:center;color:var(--yellow)">Azalma</th>
+            <th rowspan="2" style="vertical-align:middle">Cəmi Qalıq</th>
+            <th rowspan="2" style="vertical-align:middle">KYB</th>
+            <th rowspan="2" style="vertical-align:middle">SYB</th>
+          </tr>
+          <tr>
+            <th>Müştəri</th>
+            <th>KYB</th>
+            <th>SYB</th>
+            <th>Cəmi</th>
+            <th>Müştəri</th>
+            <th>KYB/KYBL</th>
+            <th>SYB</th>
+            <th>Cəmi</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+  }
+
+  // ── 4.6 Cancelled inspections table ──────────────────────────
+  function cancelledTableHTML(taxes, type) {
+    const rows = taxes.map(t => `
       <tr>
-        <th rowspan="2" style="vertical-align:middle;text-align:left">Vergi / Dövr</th>
-        <th rowspan="2" style="vertical-align:middle">Bəyannamə</th>
-        <th colspan="4" style="text-align:center;border-bottom:1px solid var(--accent);color:var(--accent)">Hesablama</th>
-        <th colspan="4" style="text-align:center;border-bottom:1px solid #f59e0b;color:#f59e0b">Azalma</th>
-        <th rowspan="2" style="vertical-align:middle">Cəmi Qalıq</th>
-        <th rowspan="2" style="vertical-align:middle">KYB</th>
-        <th rowspan="2" style="vertical-align:middle">SYB</th>
-      </tr>
-      <tr>
-        <th>Müştəri</th>
-        <th style="color:#f87171">KYB</th>
-        <th style="color:#a78bfa">SYB</th>
-        <th>Cəmi</th>
-        <th>Müştəri</th>
-        <th style="color:#f87171">KYB</th>
-        <th style="color:#a78bfa">SYB</th>
-        <th>Cəmi</th>
-      </tr>
-    </thead>
-    <tbody>${rows}</tbody>
-  </table>`;
-}
+        <td>${esc(t.key)}</td>
+        <td>${fmt(t[`${type}_hesablama`])}</td>
+        <td>${fmt(t[`${type}_azalma`])}</td>
+        <td><span class="badge badge-green">✓ Ləğv edilib</span></td>
+      </tr>`).join('');
+    const label = type.toUpperCase();
+    return `
+      <table>
+        <thead><tr>
+          <th>Vergi / Dövr</th>
+          <th>${label} Hesablama</th>
+          <th>${label} Ləğvi</th>
+          <th>Status</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+  }
 
-function renderCancelledTable(taxes, type) {
-  const hesKey = type === 'KYB' ? 'kyb_hesablama' : 'syb_hesablama';
-  const azKey  = type === 'KYB' ? 'kyb_azalma'    : 'syb_azalma';
-  const rows = taxes.map(t => `
-    <tr>
-      <td>${t.key}</td>
-      <td>${fmt(t[hesKey])}</td>
-      <td>${fmt(t[azKey])}</td>
-      <td><span class="badge badge-green">✓ Ləğv edilib</span></td>
-    </tr>
-  `).join('');
-  return `<table>
-    <thead><tr>
-      <th>Vergi / Dövr</th>
-      <th>${type} hesablama</th>
-      <th>${type} ləğvi</th>
-      <th>Status</th>
-    </tr></thead>
-    <tbody>${rows}</tbody>
-  </table>`;
-}
+  // ── 4.7 Status badge ─────────────────────────────────────────
+  function statusBadgeHTML(type, status, net) {
+    if (status === 'none')      return '<span class="badge badge-muted">—</span>';
+    if (status === 'cancelled') return '<span class="badge badge-green">✓ Ləğv</span>';
+    // active
+    const colorClass = type === 'kyb' ? 'badge-red' : 'badge-purple';
+    return `<span class="badge ${colorClass}">⚠ ${fmtRaw(net)}</span>`;
+  }
 
-// ─── XLSX EXPORT (ExcelJS) — Light/Professional Theme ─────────
-async function downloadXLSX(data) {
-  const btn = document.querySelector('.btn-primary');
-  btn.innerHTML = '⏳ Hazırlanır...';
-  btn.disabled = true;
+  return { render };
+})();
 
-  try {
-    const wb = new ExcelJS.Workbook();
-    wb.creator = 'Şəxsi Hesab Analizatoru';
 
-    const statusLabel = {
-      none: '—',
-      active: 'Aktiv',
-      cancelled: 'Ləğv edilib'
-    };
+// ═══════════════════════════════════════════════════════════════
+// SECTION 5 — XLSX EXPORT
+// Responsibility: AnalysisData → ExcelJS workbook → download
+// ═══════════════════════════════════════════════════════════════
 
-    // ── Light theme colour palette ──
-    const C = {
-      white:      'FFFFFF',
-      row1:       'F8FAFC',
-      row2:       'FFFFFF',
-      rowKybBg:   'FFF7ED',   // active KYB row tint
-      rowSybBg:   'F5F3FF',   // active SYB row tint (light purple)
-      titleBg:    '1E3A5F',
-      titleFg:    'FFFFFF',
-      subtitleBg: '2D5282',
-      subtitleFg: 'E2E8F0',
-      kybWarnBg:  'FFFBEB',
-      kybWarnFg:  '92400E',
-      kybWarnBdr: 'FCD34D',
-      sybWarnBg:  'F5F3FF',
-      sybWarnFg:  '4C1D95',
-      sybWarnBdr: 'A78BFA',
-      blueHdrBg:  '1D4ED8',
-      blueHdrFg:  'FFFFFF',
-      blueSubBg:  'DBEAFE',
-      blueSubFg:  '1E40AF',
-      amberHdrBg: 'D97706',
-      amberHdrFg: 'FFFFFF',
-      amberSubBg: 'FEF3C7',
-      amberSubFg: '92400E',
-      grayHdrBg:  '374151',
-      grayHdrFg:  'FFFFFF',
-      graySubBg:  'F3F4F6',
-      graySubFg:  '374151',
-      purpleHdrBg:'5B21B6',
-      purpleHdrFg:'FFFFFF',
-      purpleSubBg:'EDE9FE',
-      purpleSubFg:'4C1D95',
-      textDark:   '111827',
-      textMuted:  '6B7280',
-      accentBlue: '1D4ED8',
-      red:        'DC2626',
-      green:      '16A34A',
-      amber:      'D97706',
-      purple:     '7C3AED',
-      borderGray: 'D1D5DB',
-      borderMed:  '9CA3AF',
-    };
+const XlsxExport = (() => {
 
-    const numFmt    = '#,##0.00;[Red]-#,##0.00;"-"';
-    const numFmtInt = '#,##0;[Red]-#,##0;"-"';
+  // ── 5.0 Theme palette ────────────────────────────────────────
+  const C = {
+    bgDark:   '0F1117', bgMid:     '161B27', bgLight:   '1E2535',
+    border:   '2A3347',
+    blue:     '3B82F6', blueLight: 'BFDBFE', blueDark:  '172B45',
+    amber:    'F59E0B', amberLight:'FDE68A', amberDark: '2D1A00',
+    green:    '10B981', greenLight:'D1FAE5',
+    red:      'EF4444', redDark:   '2D0A0A',
+    purple:   'A855F7', purpleLight:'E9D5FF', purpleDark:'1A0A2E',
+    text:     'E2E8F0', muted:     '64748B',
+  };
 
-    function fill(hex) { return { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF' + hex } }; }
-    function font(hex, bold, size) { return { name: 'Calibri', size: size || 10, bold: !!bold, color: { argb: 'FF' + hex } }; }
-    function allBorders(style, hex) {
-      const s = { style, color: { argb: 'FF' + (hex || C.borderGray) } };
-      return { top: s, left: s, bottom: s, right: s };
+  const NUM_FMT     = '#,##0.00;[Red]-#,##0.00;"-"';
+  const NUM_FMT_INT = '#,##0;[Red]-#,##0;"-"';
+
+  const STATUS_LABEL = {
+    none:      '—',
+    active:    'Aktiv',
+    cancelled: 'Ləğv edilib',
+  };
+
+  // ── 5.1 Entry point ──────────────────────────────────────────
+  async function download(data) {
+    const btn = document.querySelector('.btn-primary');
+    btn.innerHTML = '⏳ Hazırlanır...';
+    btn.disabled = true;
+
+    try {
+      const wb = new ExcelJS.Workbook();
+      buildSheet1_Analysis(wb, data);
+      buildSheet2_Original(wb, data);
+
+      const buffer = await wb.xlsx.writeBuffer();
+      const blob   = new Blob([buffer], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      });
+      const url = URL.createObjectURL(blob);
+      Object.assign(document.createElement('a'), {
+        href:     url,
+        download: `hesab_analiz_${data.voen || 'export'}.xlsx`,
+      }).click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert('XLSX yaradılarkən xəta: ' + err.message);
+      console.error(err);
+    } finally {
+      btn.innerHTML = '⬇ XLSX yüklə';
+      btn.disabled  = false;
     }
-    function applyHeader(cell, value, bgHex, fgHex, bold, size, align) {
-      cell.value = value;
-      cell.font  = font(fgHex, bold !== false, size);
-      cell.fill  = fill(bgHex);
-      cell.alignment = { horizontal: align || 'center', vertical: 'middle', wrapText: true };
-    }
+  }
 
-    // 13 columns: Tax, Decl, Müş-Hes, KYB-Hes, SYB-Hes, Cəmi-Hes, Müş-Az, KYB-Az, SYB-Az, Cəmi-Az, Net, KYB-st, SYB-st
-    const colWidths = new Array(13).fill(0);
-    function trackWidth(colIdx, text) {
-      if (!text) return;
-      const len = String(text).length;
-      if (len > colWidths[colIdx]) colWidths[colIdx] = len;
-    }
-
-    const NCOLS = 13;
-    const lastColLetter = String.fromCharCode(64 + NCOLS); // 'M'
-
+  // ── 5.2 Sheet 1: Analysis ────────────────────────────────────
+  function buildSheet1_Analysis(wb, data) {
     const ws = wb.addWorksheet('Analiz', {
-      properties: { tabColor: { argb: 'FF1D4ED8' } },
-      views: [{ state: 'frozen', ySplit: 6 }],
-      pageSetup: { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0 }
+      properties: { tabColor: { argb: 'FF3B82F6' } },
+      views: [{ state: 'frozen', ySplit: 7 }],
     });
 
-    // ── ROW 1: Company ──
-    ws.mergeCells(`A1:${lastColLetter}1`);
-    const r1 = ws.getRow(1); r1.height = 26;
-    applyHeader(r1.getCell(1), data.companyName, C.titleBg, C.titleFg, true, 13, 'left');
-    r1.getCell(1).alignment = { horizontal: 'left', vertical: 'middle', indent: 1 };
+    // 13 data columns
+    ws.columns = [
+      { width: 32 }, // Tax/Period
+      { width: 11 }, // Decl
+      { width: 16 }, { width: 14 }, { width: 14 }, { width: 16 }, // Hes: Müş, KYB, SYB, Cəmi
+      { width: 16 }, { width: 14 }, { width: 14 }, { width: 16 }, // Az: Müş, KYB, SYB, Cəmi
+      { width: 16 }, // Net
+      { width: 18 }, { width: 18 }, // KYB status, SYB status
+    ];
 
-    // ── ROW 2: Subtitle ──
-    ws.mergeCells(`A2:${lastColLetter}2`);
-    const r2 = ws.getRow(2); r2.height = 16;
-    applyHeader(r2.getCell(1),
-      `VÖEN: ${data.voen}   |   Dövr: ${data.period}   |   Çap tarixi: ${data.printDate}`,
-      C.subtitleBg, C.subtitleFg, false, 9, 'left');
-    r2.getCell(1).alignment = { horizontal: 'left', vertical: 'middle', indent: 1 };
+    // Row 1 — Company name
+    ws.mergeCells('A1:M1');
+    setCell(ws.getRow(1).getCell(1), {
+      value: data.companyName, fill: C.bgMid,
+      font: { color: C.text, bold: true, size: 13 },
+      rowHeight: 22,
+    });
 
-    // ── ROW 3: KYB warning ──
-    ws.mergeCells(`A3:${lastColLetter}3`);
-    const r3 = ws.getRow(3); r3.height = 18;
+    // Row 2 — Meta
+    ws.mergeCells('A2:M2');
+    setCell(ws.getRow(2).getCell(1), {
+      value: `VÖEN: ${data.voen}   |   Dövr: ${data.period}   |   Çap tarixi: ${data.printDate}`,
+      fill: C.bgMid,
+      font: { color: C.muted, size: 9 },
+      rowHeight: 15,
+    });
+
+    // Rows 3-4 — Alerts
+    ws.mergeCells('A3:M3');
+    const r3 = ws.getRow(3); r3.height = 16;
     if (data.kybActive.length > 0) {
       const tot = data.kybActive.reduce((s, t) => s + t.kyb_net, 0);
-      applyHeader(r3.getCell(1),
-        `⚠  Aktiv KYB: ${data.kybActive.map(t => t.key).join(', ')}   |   Cəmi: ${tot.toLocaleString('az-AZ', { minimumFractionDigits: 2 })} ₼`,
-        C.kybWarnBg, C.kybWarnFg, true, 10, 'left');
-      r3.getCell(1).alignment = { horizontal: 'left', vertical: 'middle', indent: 1 };
-      r3.getCell(1).border = { bottom: { style: 'medium', color: { argb: 'FF' + C.kybWarnBdr } } };
-    } else {
-      r3.getCell(1).fill = fill(C.white);
-    }
+      setCell(r3.getCell(1), {
+        value: `⚠  Aktiv KYB: ${data.kybActive.map(t => t.key).join(', ')}   Cəmi: ${fmtRaw(tot)} ₼`,
+        fill: '1C1408', font: { color: 'B45309', bold: true, size: 10 },
+      });
+    } else { r3.getCell(1).fill = xFill(C.bgMid); }
 
-    // ── ROW 4: SYB warning ──
-    ws.mergeCells(`A4:${lastColLetter}4`);
-    const r4 = ws.getRow(4); r4.height = 18;
+    ws.mergeCells('A4:M4');
+    const r4 = ws.getRow(4); r4.height = 16;
     if (data.sybActive.length > 0) {
       const tot = data.sybActive.reduce((s, t) => s + t.syb_net, 0);
-      applyHeader(r4.getCell(1),
-        `🔍  Aktiv SYB: ${data.sybActive.map(t => t.key).join(', ')}   |   Cəmi: ${tot.toLocaleString('az-AZ', { minimumFractionDigits: 2 })} ₼`,
-        C.sybWarnBg, C.sybWarnFg, true, 10, 'left');
-      r4.getCell(1).alignment = { horizontal: 'left', vertical: 'middle', indent: 1 };
-      r4.getCell(1).border = { bottom: { style: 'medium', color: { argb: 'FF' + C.sybWarnBdr } } };
-    } else {
-      r4.getCell(1).fill = fill(C.white);
-    }
+      setCell(r4.getCell(1), {
+        value: `🔍  Aktiv SYB: ${data.sybActive.map(t => t.key).join(', ')}   Cəmi: ${fmtRaw(tot)} ₼`,
+        fill: '1A0A2E', font: { color: '9333EA', bold: true, size: 10 },
+      });
+    } else { r4.getCell(1).fill = xFill(C.bgMid); }
 
-    // ── ROW 5: Group headers ──
-    // Cols: 1=Tax, 2=Decl, 3-6=Hesablama(Müş,KYB,SYB,Cəmi), 7-10=Azalma(Müş,KYB,SYB,Cəmi), 11=Net, 12=KYB, 13=SYB
-    ws.mergeCells('C5:F5');
-    ws.mergeCells('G5:J5');
-    const r5 = ws.getRow(5); r5.height = 20;
-    for (let c = 1; c <= NCOLS; c++) r5.getCell(c).fill = fill(C.grayHdrBg);
-    const grpDefs5 = [
-      [1,  'Vergi / Dövr', C.grayHdrBg,  C.grayHdrFg,  'left'],
-      [2,  'Bəyannamə',    C.grayHdrBg,  C.grayHdrFg,  'center'],
-      [3,  'Hesablama',    C.blueHdrBg,  C.blueHdrFg,  'center'],
-      [7,  'Azalma',       C.amberHdrBg, C.amberHdrFg, 'center'],
-      [11, 'Cəmi Qalıq',  C.grayHdrBg,  C.grayHdrFg,  'center'],
-      [12, 'KYB',          C.grayHdrBg,  C.grayHdrFg,  'center'],
-      [13, 'SYB',          C.purpleHdrBg,C.purpleHdrFg,'center'],
+    // Row 5 — blank spacer
+    ws.mergeCells('A5:M5');
+    const r5 = ws.getRow(5); r5.height = 6;
+    r5.getCell(1).fill = xFill(C.bgDark);
+
+    // Row 6 — Group headers
+    ws.mergeCells('C6:F6');  // Hesablama
+    ws.mergeCells('G6:J6');  // Azalma
+    const r6 = ws.getRow(6); r6.height = 18;
+    for (let c = 1; c <= 13; c++) r6.getCell(c).fill = xFill(C.bgLight);
+    [
+      [1,  'Vergi / Dövr', C.bgLight, C.text],
+      [2,  'Bəyannamə',   C.bgLight, C.text],
+      [3,  'Hesablama',   C.blueDark, C.blueLight],
+      [7,  'Azalma',      C.amberDark, C.amberLight],
+      [11, 'Cəmi Qalıq', C.bgLight, C.text],
+      [12, 'KYB Status', C.bgLight, C.text],
+      [13, 'SYB Status', C.bgLight, C.text],
+    ].forEach(([col, val, bg, fg]) => {
+      setCell(r6.getCell(col), {
+        value: val, fill: bg,
+        font: { color: fg, bold: true, size: 10 },
+        align: 'center',
+        border: { bottom: { style: 'medium', color: { argb: 'FF' + C.blue } } },
+      });
+    });
+
+    // Row 7 — Sub-headers
+    const r7 = ws.getRow(7); r7.height = 15;
+    const subHeaders = [
+      '', '',
+      'Müştəri','KYB','SYB','Cəmi',
+      'Müştəri','KYB/KYBL','SYB','Cəmi',
+      '', '', '',
     ];
-    grpDefs5.forEach(([col, val, bg, fg, align]) => {
-      const cell = r5.getCell(col);
-      applyHeader(cell, val, bg, fg, true, 10, align);
-      cell.border = allBorders('thin', C.white);
+    subHeaders.forEach((v, i) => {
+      const col = i + 1;
+      const isBlue  = col >= 3 && col <= 6;
+      const isAmber = col >= 7 && col <= 10;
+      setCell(r7.getCell(col), {
+        value: v,
+        fill: isBlue ? C.blueDark : isAmber ? C.amberDark : C.bgMid,
+        font: { color: isBlue ? C.blueLight : isAmber ? C.amberLight : C.muted, bold: true, size: 9 },
+        align: 'center',
+        border: { bottom: { style: 'medium', color: { argb: 'FF' + C.blue } } },
+      });
     });
 
-    // ── ROW 6: Sub-headers ──
-    // 1=, 2=, 3=Müştəri, 4=KYB, 5=SYB, 6=Cəmi, 7=Müştəri, 8=KYB, 9=SYB, 10=Cəmi, 11=, 12=, 13=
-    const r6 = ws.getRow(6); r6.height = 16;
-    const subHdrs = ['', '', 'Müştəri', 'KYB', 'SYB', 'Cəmi', 'Müştəri', 'KYB', 'SYB', 'Cəmi', '', '', ''];
-    subHdrs.forEach((v, i) => {
-      const cell = r6.getCell(i + 1);
-      const isBlue   = i >= 2 && i <= 5;
-      const isAmber  = i >= 6 && i <= 9;
-      const bg = isBlue ? C.blueSubBg : isAmber ? C.amberSubBg : C.graySubBg;
-      const fg = isBlue ? C.blueSubFg : isAmber ? C.amberSubFg : C.graySubFg;
-      applyHeader(cell, v, bg, fg, true, 9, 'center');
-      cell.border = allBorders('thin', C.borderGray);
-    });
-
-    // ── DATA ROWS ──
+    // Data rows
     data.taxes.forEach((t, i) => {
-      const isKybActive = t.kyb_status === 'active';
-      const isSybActive = t.syb_status === 'active';
-      const rowBg = isKybActive ? C.rowKybBg : isSybActive ? C.rowSybBg : (i % 2 === 0 ? C.row1 : C.row2);
+      const rowBg  = i % 2 === 0 ? C.bgDark : C.bgMid;
+      const kybBg  = t.kyb_status === 'active' ? C.redDark : rowBg;
+      const sybBg  = t.syb_status === 'active' ? C.purpleDark : rowBg;
 
       const dr = ws.addRow([
         t.key,
         t.decl_count || null,
-        t.hesablama       || null,  // 3
-        t.kyb_hesablama   || null,  // 4
-        t.syb_hesablama   || null,  // 5
-        t.total_hesablama || null,  // 6
-        t.azalma          || null,  // 7
-        t.kyb_azalma      || null,  // 8
-        t.syb_azalma      || null,  // 9
-        t.total_azalma    || null,  // 10
-        t.total_net       || null,  // 11
-        statusLabel[t.kyb_status],  // 12
-        statusLabel[t.syb_status],  // 13
+        t.hesablama     || null,
+        t.kyb_hesablama || null,
+        t.syb_hesablama || null,
+        t.total_hesablama || null,
+        t.azalma          || null,
+        t.kyb_azalma      || null,
+        t.syb_azalma      || null,
+        t.total_azalma    || null,
+        t.total_net       || null,
+        STATUS_LABEL[t.kyb_status],
+        STATUS_LABEL[t.syb_status],
       ]);
       dr.height = 17;
-      trackWidth(0, t.key);
 
       dr.eachCell({ includeEmpty: true }, (cell, cn) => {
-        const isNum    = cn >= 3 && cn <= 11;
-        const isCount  = cn === 2;
+        const isHes    = cn >= 3  && cn <= 6;
+        const isAz     = cn >= 7  && cn <= 10;
+        const isNum    = isHes || isAz;
         const isNet    = cn === 11;
         const isKybSt  = cn === 12;
         const isSybSt  = cn === 13;
+        const isDecl   = cn === 2;
         const isTax    = cn === 1;
 
-        cell.fill = fill(rowBg);
-        cell.border = allBorders('thin', C.borderGray);
+        const bg = isKybSt ? kybBg : isSybSt ? sybBg : isNum ? (isHes ? C.bgDark : C.bgDark) : rowBg;
+        cell.fill = xFill(bg);
+        cell.border = { bottom: { style: 'thin', color: { argb: 'FF' + C.border } } };
         cell.alignment = {
-          horizontal: isNum || isCount ? 'right' : (isKybSt || isSybSt) ? 'center' : 'left',
-          vertical: 'middle'
+          horizontal: isNum || isDecl ? 'right' : (isKybSt || isSybSt) ? 'center' : 'left',
+          vertical: 'middle',
         };
 
-        const fg = isCount
-          ? C.accentBlue
-          : isNet
-            ? (t.total_net < 0 ? C.red : t.total_net === 0 ? C.textMuted : C.textDark)
-          : isKybSt
-            ? (t.kyb_status === 'active' ? C.red : t.kyb_status === 'cancelled' ? C.green : C.textMuted)
-          : isSybSt
-            ? (t.syb_status === 'active' ? C.purple : t.syb_status === 'cancelled' ? C.green : C.textMuted)
-          : C.textDark;
+        const fg = isDecl   ? '60A5FA'
+          : isNet    ? (t.total_net < 0 ? C.red : t.total_net === 0 ? C.muted : C.text)
+          : isKybSt  ? (t.kyb_status === 'active' ? C.red : t.kyb_status === 'cancelled' ? C.green : C.muted)
+          : isSybSt  ? (t.syb_status === 'active' ? C.purple : t.syb_status === 'cancelled' ? C.green : C.muted)
+          : C.text;
 
-        cell.font = font(fg, isNet || isTax, 10);
-        if (isNum)   cell.numFmt = numFmt;
-        if (isCount) cell.numFmt = numFmtInt;
+        cell.font = xFont(fg, isNet || isTax, 10);
+        if (isNum || isNet) cell.numFmt = NUM_FMT;
+        if (isDecl) cell.numFmt = NUM_FMT_INT;
       });
     });
 
-    // ── BLANK SPACER ──
-    const blank = ws.addRow([]); blank.height = 6;
-    blank.eachCell({ includeEmpty: true }, c => { c.fill = fill(C.white); });
+    // Spacer
+    const blank = ws.addRow([]); blank.height = 8;
+    blank.eachCell({ includeEmpty: true }, c => { c.fill = xFill(C.bgDark); });
 
-    // ── SUMMARY ROWS ──
-    const summaryItems = [
-      ['Cəmi ödənməli borc', data.totalDebt,                                data.totalDebt > 0         ? C.red    : C.green],
-      ['Aktiv KYB sayı',     data.kybActive.length,                         data.kybActive.length > 0  ? C.amber  : C.green],
-      ['Aktiv KYB məbləği',  data.kybActive.reduce((s,t)=>s+t.kyb_net,0),  data.kybActive.length > 0  ? C.red    : C.green],
-      ['Aktiv SYB sayı',     data.sybActive.length,                         data.sybActive.length > 0  ? C.purple : C.green],
-      ['Aktiv SYB məbləği',  data.sybActive.reduce((s,t)=>s+t.syb_net,0),  data.sybActive.length > 0  ? C.red    : C.green],
+    // Summary block
+    const kybTotal = data.kybActive.reduce((s, t) => s + t.kyb_net, 0);
+    const sybTotal = data.sybActive.reduce((s, t) => s + t.syb_net, 0);
+    [
+      ['Cəmi ödənməli borc', data.totalDebt,         data.totalDebt > 0 ? C.red    : C.green],
+      ['Aktiv KYB sayı',     data.kybActive.length,  data.kybActive.length > 0 ? C.amber : C.green],
+      ['Aktiv KYB məbləği',  kybTotal,               kybTotal > 0 ? C.red  : C.green],
+      ['Aktiv SYB sayı',     data.sybActive.length,  data.sybActive.length > 0 ? C.purple : C.green],
+      ['Aktiv SYB məbləği',  sybTotal,               sybTotal > 0 ? C.purple : C.green],
+    ].forEach(([lbl, val, vc]) => {
+      const sr = ws.addRow([lbl, val]); sr.height = 17;
+      setCell(sr.getCell(1), { fill: C.bgMid, font: { color: C.text, bold: true } });
+      setCell(sr.getCell(2), {
+        fill: C.bgMid, font: { color: vc, bold: true },
+        align: 'right', numFmt: NUM_FMT,
+        border: { bottom: { style: 'thin', color: { argb: 'FF' + C.border } } },
+      });
+    });
+  }
+
+  // ── 5.3 Sheet 2: Original Statement ──────────────────────────
+  function buildSheet2_Original(wb, data) {
+    const ws = wb.addWorksheet('Orijinal', {
+      properties: { tabColor: { argb: 'FF64748B' } },
+      views: [{ state: 'frozen', ySplit: 2 }],
+    });
+
+    // Header rows
+    ws.mergeCells('A1:E1');
+    setCell(ws.getRow(1).getCell(1), {
+      value: `${data.companyName}  |  VÖEN: ${data.voen}`,
+      fill: C.bgMid, font: { color: C.text, bold: true, size: 12 },
+      rowHeight: 20,
+    });
+
+    const colHeaders = ['Yazılış tarixi','Əməliyyat adı','Əməliyyat növü','','Miqdar (Manat)'];
+    ws.columns = [
+      { width: 16 }, { width: 45 }, { width: 14 }, { width: 14 }, { width: 16 },
     ];
-    summaryItems.forEach(([lbl, val, vc]) => {
-      const sr = ws.addRow([lbl, val]); sr.height = 18;
-      const c1 = sr.getCell(1);
-      c1.value = lbl; c1.font = font(C.textDark, true, 10); c1.fill = fill(C.graySubBg);
-      c1.alignment = { horizontal: 'left', vertical: 'middle', indent: 1 };
-      c1.border = allBorders('thin', C.borderGray);
-      const c2 = sr.getCell(2);
-      c2.value = val; c2.numFmt = numFmt; c2.font = font(vc, true, 10); c2.fill = fill(C.graySubBg);
-      c2.alignment = { horizontal: 'right', vertical: 'middle' };
-      c2.border = allBorders('thin', C.borderGray);
+
+    const hr = ws.addRow(colHeaders); hr.height = 17;
+    hr.eachCell(c => {
+      c.font  = xFont(C.text, true);
+      c.fill  = xFill(C.bgLight);
+      c.alignment = { horizontal: 'center', vertical: 'middle' };
+      c.border = { bottom: { style: 'medium', color: { argb: 'FF' + C.border } } };
     });
 
-    // ── AUTO COLUMN WIDTHS ──
-    const minWidths = [28, 11, 14, 12, 12, 14, 14, 12, 12, 14, 14, 14, 14];
-    ws.columns.forEach((col, i) => {
-      const auto = Math.max(minWidths[i] || 12, colWidths[i] + 2);
-      col.width = Math.min(auto, 45);
-    });
-
-    // Add clean statement sheet BEFORE writing buffer
-    await downloadCleanXLSX(data, wb);
-
-    const buffer = await wb.xlsx.writeBuffer();
-    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = `hesab_analiz_${data.voen||'export'}.xlsx`; a.click();
-    URL.revokeObjectURL(url);
-
-  } finally {
-    btn.innerHTML = '⬇ XLSX yüklə';
-    btn.disabled = false;
-  }
-}
-
-
-// ─── CLEAN STATEMENT SHEET (added to analiz workbook) ─────────
-async function downloadCleanXLSX(data, wb) {
-  const ws = wb.addWorksheet('Orijinal Statement', {
-    properties: { tabColor: { argb: 'FF16A34A' } },
-    views: [{ state: 'frozen', ySplit: 5 }],
-    pageSetup: { orientation: 'landscape', fitToPage: true, fitToWidth: 1 }
-  });
-
-  // ── Colour palette (light/professional) ──
-  const C = {
-    titleBg:   '1E3A5F', titleFg:   'FFFFFF',
-    subBg:     '2D5282', subFg:     'E2E8F0',
-    hdrBg:     '374151', hdrFg:     'FFFFFF',
-    row1:      'F8FAFC', row2:      'FFFFFF',
-    textDark:  '111827', textMuted: '6B7280',
-    red:       'DC2626', green:     '16A34A',
-    borderGray:'D1D5DB',
-  };
-  const numFmt = '#,##0.00;[Red]-#,##0.00;"-"';
-
-  function fill(hex) { return { type:'pattern', pattern:'solid', fgColor:{ argb:'FF'+hex } }; }
-  function font(hex, bold, size) { return { name:'Calibri', size:size||10, bold:!!bold, color:{ argb:'FF'+hex } }; }
-  function allBorders(hex) {
-    const s = { style:'thin', color:{ argb:'FF'+(hex||C.borderGray) } };
-    return { top:s, left:s, bottom:s, right:s };
-  }
-
-  const headers = data.rawHeaders;
-  const colCount = Math.max(headers.length, 1);
-
-  // ── Detect which columns hold dates / amounts ──
-  const dateColIdxs = new Set();
-  const amountColIdxs = new Set();
-  headers.forEach((h, i) => {
-    const hl = h.toLowerCase();
-    if (hl.includes('tarix') || hl.includes('date')) dateColIdxs.add(i);
-    // Amount: miqdar, məbləğ, manat, balans, qalıq, artıq, ödəmə (when it's a number col)
-    if (hl.includes('miqdar') || hl.includes('məbləğ') || hl.includes('manat') ||
-        hl.includes('balans') || hl.includes('qalıq') || hl.includes('artıq') ||
-        hl.includes('amount') || hl.includes('borc')) amountColIdxs.add(i);
-  });
-  // Fallback
-  if (dateColIdxs.size === 0) dateColIdxs.add(0);
-  if (amountColIdxs.size === 0) amountColIdxs.add(4);
-
-  // Also auto-detect by scanning first data rows: if >70% of non-empty values parse as number → amount col
-  if (data.rawRows.length > 0) {
-    const sampleSize = Math.min(data.rawRows.length, 20);
-    const colLen = data.rawRows[0].length;
-    for (let ci = 0; ci < colLen; ci++) {
-      if (dateColIdxs.has(ci) || amountColIdxs.has(ci)) continue;
-      let numCount = 0, nonEmpty = 0;
-      for (let ri = 0; ri < sampleSize; ri++) {
-        const v = (data.rawRows[ri][ci] || '').trim();
-        if (!v) continue;
-        nonEmpty++;
-        // Matches number format like 1.234,56 or 1234,56 or 1234.56
-        if (/^-?[\d\.]+,\d{2}$/.test(v) || /^-?[\d,]+\.\d{2}$/.test(v)) numCount++;
-      }
-      if (nonEmpty > 0 && numCount / nonEmpty > 0.7) amountColIdxs.add(ci);
-    }
-  }
-
-  // ── Helper: parse Azerbaijani date string → JS Date ──
-  function parseAzDate(s) {
-    if (!s) return null;
-    s = s.trim();
-    // DD.MM.YYYY HH:MM:SS or DD.MM.YYYY HH:MM or DD.MM.YYYY
-    const m = s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})/);
-    if (!m) return null;
-    return new Date(parseInt(m[3]), parseInt(m[2]) - 1, parseInt(m[1]));
-  }
-
-  // ── ROW 1: Company ──
-  const lastCol = String.fromCharCode(64 + colCount);
-  ws.mergeCells(`A1:${lastCol}1`);
-  const r1 = ws.getRow(1); r1.height = 26;
-  const c1 = r1.getCell(1);
-  c1.value = data.companyName;
-  c1.font = font(C.titleFg, true, 13);
-  c1.fill = fill(C.titleBg);
-  c1.alignment = { horizontal:'left', vertical:'middle', indent:1 };
-
-  // ── ROW 2: VÖEN + period ──
-  ws.mergeCells(`A2:${lastCol}2`);
-  const r2 = ws.getRow(2); r2.height = 16;
-  const c2 = r2.getCell(1);
-  c2.value = `VÖEN: ${data.voen}   |   Dövr: ${data.period}   |   Çap tarixi: ${data.printDate}`;
-  c2.font = font(C.subFg, false, 9);
-  c2.fill = fill(C.subBg);
-  c2.alignment = { horizontal:'left', vertical:'middle', indent:1 };
-
-  // ── ROW 3: Separator ──
-  ws.mergeCells(`A3:${lastCol}3`);
-  const r3 = ws.getRow(3); r3.height = 4;
-  r3.getCell(1).fill = fill(C.borderGray);
-
-  // ── ROW 4: Note about cleaning ──
-  ws.mergeCells(`A4:${lastCol}4`);
-  const r4 = ws.getRow(4); r4.height = 15;
-  const c4 = r4.getCell(1);
-  c4.value = `✓  Təmizlənmiş statement — tarixlər Excel formatında, məbləğlər rəqəm kimi`;
-  c4.font = font('15803D', false, 9);
-  c4.fill = fill('F0FDF4');
-  c4.alignment = { horizontal:'left', vertical:'middle', indent:1 };
-
-  // ── ROW 5: Column headers ──
-  const r5 = ws.getRow(5); r5.height = 20;
-  headers.forEach((h, i) => {
-    const cell = r5.getCell(i + 1);
-    cell.value = h;
-    cell.font = font(C.hdrFg, true, 10);
-    cell.fill = fill(C.hdrBg);
-    cell.alignment = { horizontal:'center', vertical:'middle', wrapText:true };
-    cell.border = allBorders('FFFFFF');
-  });
-
-  // ── DATA ROWS ──
-  data.rawRows.forEach((cells, rowIdx) => {
-    const dr = ws.addRow([]);
-    dr.height = 17;
-
-    cells.forEach((val, ci) => {
-      const cell = dr.getCell(ci + 1);
-      const rowBg = rowIdx % 2 === 0 ? C.row1 : C.row2;
-      cell.fill = fill(rowBg);
-      cell.border = allBorders(C.borderGray);
-      cell.alignment = { vertical:'middle' };
-
-      if (dateColIdxs.has(ci)) {
-        // Try to parse as date
-        const d = parseAzDate(val);
-        if (d && !isNaN(d)) {
-          cell.value = d;
-          cell.numFmt = 'DD.MM.YYYY';
-          cell.font = font(C.textDark, false, 10);
-          cell.alignment = { horizontal:'center', vertical:'middle' };
-        } else {
-          cell.value = val;
-          cell.font = font(C.textMuted, false, 10);
-          cell.alignment = { horizontal:'center', vertical:'middle' };
+    // Data
+    data.rawRows.forEach((r, i) => {
+      const dr = ws.addRow([r.date, r.opName, r.opType, r.col3, r.amount || null]);
+      dr.height = 16;
+      dr.eachCell({ includeEmpty: true }, (cell, cn) => {
+        const rowBg = i % 2 === 0 ? C.bgDark : C.bgMid;
+        cell.fill  = xFill(rowBg);
+        cell.font  = xFont(C.text, false, 10);
+        cell.border = { bottom: { style: 'thin', color: { argb: 'FF' + C.border } } };
+        if (cn === 1) {
+          // Try to parse as date
+          const parts = r.date.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+          if (parts) {
+            cell.value = new Date(+parts[3], +parts[2]-1, +parts[1]);
+            cell.numFmt = 'DD.MM.YYYY';
+          }
+          cell.alignment = { horizontal: 'center', vertical: 'middle' };
         }
-      } else if (amountColIdxs.has(ci)) {
-        // Parse as number
-        const n = parseAmount(val);
-        if (val !== '' && !isNaN(n)) {
-          cell.value = n;
-          cell.numFmt = numFmt;
-          cell.font = font(n < 0 ? C.red : C.textDark, false, 10);
-          cell.alignment = { horizontal:'right', vertical:'middle' };
-        } else {
-          cell.value = val;
-          cell.font = font(C.textMuted, false, 10);
-          cell.alignment = { horizontal:'right', vertical:'middle' };
+        if (cn === 5) {
+          cell.numFmt   = NUM_FMT;
+          cell.alignment = { horizontal: 'right', vertical: 'middle' };
         }
-      } else {
-        // Text column — just clean whitespace
-        const cleaned = val.replace(/\s+/g, ' ').trim();
-        cell.value = cleaned;
-        cell.font = font(C.textDark, false, 10);
-        cell.alignment = { horizontal:'left', vertical:'middle' };
-      }
+        if (cn === 2 || cn === 3) {
+          cell.alignment = { vertical: 'middle' };
+        }
+      });
     });
-  });
 
-  // ── AUTO COLUMN WIDTHS ──
-  // Measure header + first few data rows
-  const widths = headers.map(h => Math.min(Math.max(h.length + 2, 10), 40));
-  data.rawRows.slice(0, 30).forEach(cells => {
-    cells.forEach((v, i) => {
-      if (dateColIdxs.has(i)) {
-        widths[i] = Math.max(widths[i], 14);
-      } else if (amountColIdxs.has(i)) {
-        widths[i] = Math.max(widths[i], 16);
-      } else {
-        const len = Math.min(String(v).length + 2, 45);
-        if (len > widths[i]) widths[i] = len;
-      }
-    });
-  });
-  ws.columns = widths.map(w => ({ width: w }));
-  // Sheet is now part of the main workbook — no separate download needed
+    // Auto-width for col 2 (opName is long, but cap at 55)
+    ws.getColumn(2).width = Math.min(55,
+      data.rawRows.reduce((max, r) => Math.max(max, (r.opName || '').length), 20));
+  }
+
+  // ── 5.4 ExcelJS helpers ───────────────────────────────────────
+  function xFill(hex) {
+    return { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF' + hex } };
+  }
+  function xFont(color, bold, size) {
+    return { name: 'Arial', size: size || 10, bold: !!bold, color: { argb: 'FF' + color } };
+  }
+  function setCell(cell, opts) {
+    if (opts.value  !== undefined) cell.value     = opts.value;
+    if (opts.fill)                 cell.fill      = xFill(opts.fill);
+    if (opts.font)                 cell.font      = xFont(opts.font.color, opts.font.bold, opts.font.size);
+    if (opts.align)                cell.alignment = { horizontal: opts.align, vertical: 'middle' };
+    if (opts.border)               cell.border    = opts.border;
+    if (opts.numFmt)               cell.numFmt    = opts.numFmt;
+    if (opts.rowHeight && cell._row) cell._row.height = opts.rowHeight;
+  }
+
+  return { download };
+})();
+
+
+// ═══════════════════════════════════════════════════════════════
+// SECTION 6 — FORMAT HELPERS  (pure functions)
+// ═══════════════════════════════════════════════════════════════
+
+// Format number → colored HTML span
+function fmt(n) {
+  if (n === 0) return '<span class="num-zero">—</span>';
+  const s = Math.abs(n).toLocaleString('az-AZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return n < 0
+    ? `<span class="num-neg">-${s}</span>`
+    : `<span class="num-pos">${s}</span>`;
 }
 
-// ─── UI HELPERS ───────────────────────────────────────────────
-function showSpinner(show) {
-  document.getElementById('spinner').style.display = show ? 'block' : 'none';
+// Format number → plain string (for alerts, XLSX)
+function fmtRaw(n) {
+  return Math.abs(n).toLocaleString('az-AZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
-function showError(msg) {
-  const el = document.getElementById('errorBox');
-  el.textContent = msg;
-  el.style.display = 'block';
+
+// HTML-escape to prevent XSS when inserting company names etc.
+function esc(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
-function hideError() {
-  document.getElementById('errorBox').style.display = 'none';
-}
+
+
+// ═══════════════════════════════════════════════════════════════
+// SECTION 7 — UI HELPERS
+// ═══════════════════════════════════════════════════════════════
+
+const ui = {
+  showSpinner(show) {
+    document.getElementById('spinner').style.display = show ? 'block' : 'none';
+  },
+  showError(msg) {
+    const el = document.getElementById('errorBox');
+    el.textContent = msg;
+    el.style.display = 'block';
+  },
+  hideError() {
+    document.getElementById('errorBox').style.display = 'none';
+  },
+};
+
+
+// ═══════════════════════════════════════════════════════════════
+// SECTION 8 — BOOTSTRAP
+// ═══════════════════════════════════════════════════════════════
+
+initDropZone();
 </script>
-
-<!-- ── FOOTER INSTRUCTIONS ── -->
-<div class="footer-guide">
-
-  <div class="guide-grid">
-
-    <!-- LEFT: How to download -->
-    <div class="guide-block">
-      <div class="guide-title">📥 Faylı necə yükləmək lazımdır</div>
-      <ol class="guide-steps">
-        <li>
-          <span class="step-num">1</span>
-          <span>Vergi portalına daxil olun: <span class="mono">e-taxes.gov.az</span></span>
-        </li>
-        <li>
-          <span class="step-num">2</span>
-          <span>Şəxsi hesab → hesab vərəqəsi bölməsinə keçin</span>
-        </li>
-        <li>
-          <span class="step-num">3</span>
-          <span>Dövrü seçin və <b>«XLS»</b> düyməsini basın
-            <span class="warn-tag">⚠ «HTML» yox, məhz «XLS»</span>
-          </span>
-        </li>
-        <li>
-          <span class="step-num">4</span>
-          <span>Yüklənmiş faylı bu səhifəyə atın və ya «Fayl seçin» ilə açın</span>
-        </li>
-      </ol>
-      <div class="guide-note">
-        <b>Qeyd:</b> Bəzi brauzerlər faylı <span class="mono">.xls</span> əvəzinə <span class="mono">.html</span> kimi saxlayır — bu normaldır, alət hər iki formatı oxuyur. Lakin portaldakı «HTML» düyməsi ilə yüklənmiş fayl <b>işləmir</b>.
-      </div>
-    </div>
-
-    <!-- RIGHT: Output description -->
-    <div class="guide-block">
-      <div class="guide-title">📊 Nəticə nə göstərir</div>
-      <div class="guide-output-list">
-        <div class="output-item">
-          <div class="output-icon">🏢</div>
-          <div>
-            <b>Şirkət kartı</b><br>
-            <span class="muted-text">Ad, VÖEN, əhatə dövrü və çap tarixi</span>
-          </div>
-        </div>
-        <div class="output-item">
-          <div class="output-icon">⚠️</div>
-          <div>
-            <b>KYB xəbərdarlığı</b><br>
-            <span class="muted-text">Aktiv kameral yoxlama varsa — hansı vergi, neçə manat</span>
-          </div>
-        </div>
-        <div class="output-item">
-          <div class="output-icon">📋</div>
-          <div>
-            <b>Vergilər üzrə cədvəl</b><br>
-            <span class="muted-text">Hər vergi/dövr üzrə: hesablama, azalma, qalıq, bəyannamə sayı, KYB statusu</span>
-          </div>
-        </div>
-        <div class="output-item">
-          <div class="output-icon">⬇️</div>
-          <div>
-            <b>XLSX ixracı (2 vərəq)</b><br>
-            <span class="muted-text"><b>Analiz</b> — formatlanmış hesabat, çap üçün hazır<br>
-            <b>Orijinal Statement</b> — təmizlənmiş portal məlumatı: tarixlər Excel formatında, məbləğlər rəqəm kimi</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-  </div>
-</div>
-
 </body>
 </html>
