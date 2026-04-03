@@ -883,43 +883,54 @@ const XlsxExport = (() => {
       { width: 18 }, { width: 18 }, // KYB status, SYB status
     ];
 
+    const brd  = (style, col) => ({ bottom: { style, color: { argb: 'FF' + (col || C.border) } } });
+
     // Row 1 — Company name
     ws.mergeCells('A1:M1');
-    setCell(ws.getRow(1).getCell(1), {
-      value: data.companyName, fill: C.bgMid,
-      font: { color: C.text, bold: true, size: 13 },
-      rowHeight: 22,
+    const r1 = ws.getRow(1); r1.height = 22;
+    Object.assign(r1.getCell(1), {
+      value: data.companyName,
+      font:  xFont(C.text, true, 13),
+      fill:  xFill(C.bgMid),
+      alignment: { vertical: 'middle' },
     });
 
     // Row 2 — Meta
     ws.mergeCells('A2:M2');
-    setCell(ws.getRow(2).getCell(1), {
+    const r2 = ws.getRow(2); r2.height = 15;
+    Object.assign(r2.getCell(1), {
       value: `VÖEN: ${data.voen}   |   Dövr: ${data.period}   |   Çap tarixi: ${data.printDate}`,
-      fill: C.bgMid,
-      font: { color: C.muted, size: 9 },
-      rowHeight: 15,
+      font:  xFont(C.muted, false, 9),
+      fill:  xFill(C.bgMid),
     });
 
-    // Rows 3-4 — Alerts
+    // Row 3 — KYB alert
     ws.mergeCells('A3:M3');
     const r3 = ws.getRow(3); r3.height = 16;
     if (data.kybActive.length > 0) {
       const tot = data.kybActive.reduce((s, t) => s + t.kyb_net, 0);
-      setCell(r3.getCell(1), {
+      Object.assign(r3.getCell(1), {
         value: `⚠  Aktiv KYB: ${data.kybActive.map(t => t.key).join(', ')}   Cəmi: ${fmtRaw(tot)} ₼`,
-        fill: '1C1408', font: { color: 'B45309', bold: true, size: 10 },
+        font:  xFont('B45309', true, 10),
+        fill:  xFill('1C1408'),
       });
-    } else { r3.getCell(1).fill = xFill(C.bgMid); }
+    } else {
+      r3.getCell(1).fill = xFill(C.bgMid);
+    }
 
+    // Row 4 — SYB alert
     ws.mergeCells('A4:M4');
     const r4 = ws.getRow(4); r4.height = 16;
     if (data.sybActive.length > 0) {
       const tot = data.sybActive.reduce((s, t) => s + t.syb_net, 0);
-      setCell(r4.getCell(1), {
+      Object.assign(r4.getCell(1), {
         value: `🔍  Aktiv SYB: ${data.sybActive.map(t => t.key).join(', ')}   Cəmi: ${fmtRaw(tot)} ₼`,
-        fill: '1A0A2E', font: { color: '9333EA', bold: true, size: 10 },
+        font:  xFont('9333EA', true, 10),
+        fill:  xFill('1A0A2E'),
       });
-    } else { r4.getCell(1).fill = xFill(C.bgMid); }
+    } else {
+      r4.getCell(1).fill = xFill(C.bgMid);
+    }
 
     // Row 5 — blank spacer
     ws.mergeCells('A5:M5');
@@ -932,55 +943,50 @@ const XlsxExport = (() => {
     const r6 = ws.getRow(6); r6.height = 18;
     for (let c = 1; c <= 13; c++) r6.getCell(c).fill = xFill(C.bgLight);
     [
-      [1,  'Vergi / Dövr', C.bgLight, C.text],
-      [2,  'Bəyannamə',   C.bgLight, C.text],
-      [3,  'Hesablama',   C.blueDark, C.blueLight],
+      [1,  'Vergi / Dövr', C.bgLight,   C.text],
+      [2,  'Bəyannamə',   C.bgLight,   C.text],
+      [3,  'Hesablama',   C.blueDark,  C.blueLight],
       [7,  'Azalma',      C.amberDark, C.amberLight],
-      [11, 'Cəmi Qalıq', C.bgLight, C.text],
-      [12, 'KYB Status', C.bgLight, C.text],
-      [13, 'SYB Status', C.bgLight, C.text],
+      [11, 'Cəmi Qalıq', C.bgLight,   C.text],
+      [12, 'KYB Status', C.bgLight,   C.text],
+      [13, 'SYB Status', C.bgLight,   C.text],
     ].forEach(([col, val, bg, fg]) => {
-      setCell(r6.getCell(col), {
-        value: val, fill: bg,
-        font: { color: fg, bold: true, size: 10 },
-        align: 'center',
-        border: { bottom: { style: 'medium', color: { argb: 'FF' + C.blue } } },
+      Object.assign(r6.getCell(col), {
+        value:     val,
+        font:      xFont(fg, true, 10),
+        fill:      xFill(bg),
+        alignment: { horizontal: 'center', vertical: 'middle' },
+        border:    brd('medium', C.blue),
       });
     });
 
     // Row 7 — Sub-headers
     const r7 = ws.getRow(7); r7.height = 15;
-    const subHeaders = [
-      '', '',
-      'Müştəri','KYB','SYB','Cəmi',
-      'Müştəri','KYB/KYBL','SYB','Cəmi',
-      '', '', '',
-    ];
-    subHeaders.forEach((v, i) => {
-      const col = i + 1;
+    ['','','Müştəri','KYB','SYB','Cəmi','Müştəri','KYB/KYBL','SYB','Cəmi','','',''].forEach((v, i) => {
+      const col     = i + 1;
       const isBlue  = col >= 3 && col <= 6;
       const isAmber = col >= 7 && col <= 10;
-      setCell(r7.getCell(col), {
-        value: v,
-        fill: isBlue ? C.blueDark : isAmber ? C.amberDark : C.bgMid,
-        font: { color: isBlue ? C.blueLight : isAmber ? C.amberLight : C.muted, bold: true, size: 9 },
-        align: 'center',
-        border: { bottom: { style: 'medium', color: { argb: 'FF' + C.blue } } },
+      Object.assign(r7.getCell(col), {
+        value:     v,
+        font:      xFont(isBlue ? C.blueLight : isAmber ? C.amberLight : C.muted, true, 9),
+        fill:      xFill(isBlue ? C.blueDark : isAmber ? C.amberDark : C.bgMid),
+        alignment: { horizontal: 'center', vertical: 'middle' },
+        border:    brd('medium', C.blue),
       });
     });
 
     // Data rows
     data.taxes.forEach((t, i) => {
-      const rowBg  = i % 2 === 0 ? C.bgDark : C.bgMid;
-      const kybBg  = t.kyb_status === 'active' ? C.redDark : rowBg;
-      const sybBg  = t.syb_status === 'active' ? C.purpleDark : rowBg;
+      const rowBg = i % 2 === 0 ? C.bgDark : C.bgMid;
+      const kybBg = t.kyb_status === 'active' ? C.redDark    : rowBg;
+      const sybBg = t.syb_status === 'active' ? C.purpleDark : rowBg;
 
       const dr = ws.addRow([
         t.key,
-        t.decl_count || null,
-        t.hesablama     || null,
-        t.kyb_hesablama || null,
-        t.syb_hesablama || null,
+        t.decl_count      || null,
+        t.hesablama       || null,
+        t.kyb_hesablama   || null,
+        t.syb_hesablama   || null,
         t.total_hesablama || null,
         t.azalma          || null,
         t.kyb_azalma      || null,
@@ -993,32 +999,33 @@ const XlsxExport = (() => {
       dr.height = 17;
 
       dr.eachCell({ includeEmpty: true }, (cell, cn) => {
-        const isHes    = cn >= 3  && cn <= 6;
-        const isAz     = cn >= 7  && cn <= 10;
-        const isNum    = isHes || isAz;
-        const isNet    = cn === 11;
-        const isKybSt  = cn === 12;
-        const isSybSt  = cn === 13;
-        const isDecl   = cn === 2;
-        const isTax    = cn === 1;
+        const isHes   = cn >= 3  && cn <= 6;
+        const isAz    = cn >= 7  && cn <= 10;
+        const isNum   = isHes || isAz;
+        const isNet   = cn === 11;
+        const isKybSt = cn === 12;
+        const isSybSt = cn === 13;
+        const isDecl  = cn === 2;
+        const isTax   = cn === 1;
 
-        const bg = isKybSt ? kybBg : isSybSt ? sybBg : isNum ? (isHes ? C.bgDark : C.bgDark) : rowBg;
-        cell.fill = xFill(bg);
-        cell.border = { bottom: { style: 'thin', color: { argb: 'FF' + C.border } } };
+        // Background: status columns get their own colour, rest use rowBg
+        const bg = isKybSt ? kybBg : isSybSt ? sybBg : rowBg;
+        cell.fill      = xFill(bg);
+        cell.border    = brd('thin');
         cell.alignment = {
           horizontal: isNum || isDecl ? 'right' : (isKybSt || isSybSt) ? 'center' : 'left',
           vertical: 'middle',
         };
 
-        const fg = isDecl   ? '60A5FA'
-          : isNet    ? (t.total_net < 0 ? C.red : t.total_net === 0 ? C.muted : C.text)
-          : isKybSt  ? (t.kyb_status === 'active' ? C.red : t.kyb_status === 'cancelled' ? C.green : C.muted)
-          : isSybSt  ? (t.syb_status === 'active' ? C.purple : t.syb_status === 'cancelled' ? C.green : C.muted)
+        const fg = isDecl  ? '60A5FA'
+          : isNet   ? (t.total_net < 0 ? C.red : t.total_net === 0 ? C.muted : C.text)
+          : isKybSt ? (t.kyb_status === 'active' ? C.red    : t.kyb_status === 'cancelled' ? C.green  : C.muted)
+          : isSybSt ? (t.syb_status === 'active' ? C.purple : t.syb_status === 'cancelled' ? C.green  : C.muted)
           : C.text;
 
         cell.font = xFont(fg, isNet || isTax, 10);
         if (isNum || isNet) cell.numFmt = NUM_FMT;
-        if (isDecl) cell.numFmt = NUM_FMT_INT;
+        if (isDecl)         cell.numFmt = NUM_FMT_INT;
       });
     });
 
@@ -1030,18 +1037,24 @@ const XlsxExport = (() => {
     const kybTotal = data.kybActive.reduce((s, t) => s + t.kyb_net, 0);
     const sybTotal = data.sybActive.reduce((s, t) => s + t.syb_net, 0);
     [
-      ['Cəmi ödənməli borc', data.totalDebt,         data.totalDebt > 0 ? C.red    : C.green],
-      ['Aktiv KYB sayı',     data.kybActive.length,  data.kybActive.length > 0 ? C.amber : C.green],
-      ['Aktiv KYB məbləği',  kybTotal,               kybTotal > 0 ? C.red  : C.green],
+      ['Cəmi ödənməli borc', data.totalDebt,        data.totalDebt > 0        ? C.red    : C.green],
+      ['Aktiv KYB sayı',     data.kybActive.length,  data.kybActive.length > 0 ? C.amber  : C.green],
+      ['Aktiv KYB məbləği',  kybTotal,               kybTotal > 0              ? C.red    : C.green],
       ['Aktiv SYB sayı',     data.sybActive.length,  data.sybActive.length > 0 ? C.purple : C.green],
-      ['Aktiv SYB məbləği',  sybTotal,               sybTotal > 0 ? C.purple : C.green],
+      ['Aktiv SYB məbləği',  sybTotal,               sybTotal > 0              ? C.purple : C.green],
     ].forEach(([lbl, val, vc]) => {
       const sr = ws.addRow([lbl, val]); sr.height = 17;
-      setCell(sr.getCell(1), { fill: C.bgMid, font: { color: C.text, bold: true } });
-      setCell(sr.getCell(2), {
-        fill: C.bgMid, font: { color: vc, bold: true },
-        align: 'right', numFmt: NUM_FMT,
-        border: { bottom: { style: 'thin', color: { argb: 'FF' + C.border } } },
+      Object.assign(sr.getCell(1), {
+        font:      xFont(C.text, true),
+        fill:      xFill(C.bgMid),
+        alignment: { vertical: 'middle' },
+      });
+      Object.assign(sr.getCell(2), {
+        font:      xFont(vc, true),
+        fill:      xFill(C.bgMid),
+        alignment: { horizontal: 'right', vertical: 'middle' },
+        numFmt:    NUM_FMT,
+        border:    brd('thin'),
       });
     });
   }
@@ -1055,10 +1068,12 @@ const XlsxExport = (() => {
 
     // Header rows
     ws.mergeCells('A1:E1');
-    setCell(ws.getRow(1).getCell(1), {
-      value: `${data.companyName}  |  VÖEN: ${data.voen}`,
-      fill: C.bgMid, font: { color: C.text, bold: true, size: 12 },
-      rowHeight: 20,
+    const s2r1 = ws.getRow(1); s2r1.height = 20;
+    Object.assign(s2r1.getCell(1), {
+      value:     `${data.companyName}  |  VÖEN: ${data.voen}`,
+      font:      xFont(C.text, true, 12),
+      fill:      xFill(C.bgMid),
+      alignment: { vertical: 'middle' },
     });
 
     const colHeaders = ['Yazılış tarixi','Əməliyyat adı','Əməliyyat növü','','Miqdar (Manat)'];
@@ -1114,16 +1129,6 @@ const XlsxExport = (() => {
   function xFont(color, bold, size) {
     return { name: 'Arial', size: size || 10, bold: !!bold, color: { argb: 'FF' + color } };
   }
-  function setCell(cell, opts) {
-    if (opts.value  !== undefined) cell.value     = opts.value;
-    if (opts.fill)                 cell.fill      = xFill(opts.fill);
-    if (opts.font)                 cell.font      = xFont(opts.font.color, opts.font.bold, opts.font.size);
-    if (opts.align)                cell.alignment = { horizontal: opts.align, vertical: 'middle' };
-    if (opts.border)               cell.border    = opts.border;
-    if (opts.numFmt)               cell.numFmt    = opts.numFmt;
-    if (opts.rowHeight && cell._row) cell._row.height = opts.rowHeight;
-  }
-
   return { download };
 })();
 
