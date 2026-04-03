@@ -817,14 +817,25 @@ const XlsxExport = (() => {
 
   // ── 5.0 Theme palette ────────────────────────────────────────
   const C = {
-    bgDark:   '0F1117', bgMid:     '161B27', bgLight:   '1E2535',
-    border:   '2A3347',
-    blue:     '3B82F6', blueLight: 'BFDBFE', blueDark:  '172B45',
-    amber:    'F59E0B', amberLight:'FDE68A', amberDark: '2D1A00',
-    green:    '10B981', greenLight:'D1FAE5',
-    red:      'EF4444', redDark:   '2D0A0A',
-    purple:   'A855F7', purpleLight:'E9D5FF', purpleDark:'1A0A2E',
-    text:     'E2E8F0', muted:     '64748B',
+    bgDark:      'F1F5F9', // чётные строки — светло-серый
+    bgMid:       'FFFFFF', // нечётные строки — белый
+    bgLight:     'E8F0FE', // фон заголовков
+    border:      'CBD5E1', // рамки
+    blue:        '1D4ED8', // синий текст
+    blueLight:   'DBEAFE', // фон группы Hesablama
+    blueDark:    '1E3A6E', // текст в группе Hesablama
+    amber:       'B45309', // янтарный текст
+    amberLight:  'FEF3C7', // фон группы Azalma
+    amberDark:   '78350F', // текст в группе Azalma
+    green:       '15803D', // зелёный статус
+    greenLight:  'DCFCE7',
+    red:         'B91C1C', // красный — долг, KYB
+    redDark:     'FEE2E2', // фон активного KYB
+    purple:      '7E22CE', // фиолетовый — SYB
+    purpleLight: 'F3E8FF',
+    purpleDark:  'FAF5FF', // фон активного SYB
+    text:        '0F172A', // основной текст — почти чёрный
+    muted:       '475569', // вторичный текст
   };
 
   const NUM_FMT     = '#,##0.00;[Red]-#,##0.00;"-"';
@@ -911,8 +922,8 @@ const XlsxExport = (() => {
       const tot = data.kybActive.reduce((s, t) => s + t.kyb_net, 0);
       Object.assign(r3.getCell(1), {
         value: `⚠  Aktiv KYB: ${data.kybActive.map(t => t.key).join(', ')}   Cəmi: ${fmtRaw(tot)} ₼`,
-        font:  xFont('B45309', true, 10),
-        fill:  xFill('1C1408'),
+        font:  xFont('92400E', true, 10),
+        fill:  xFill('FEF3C7'),
       });
     } else {
       r3.getCell(1).fill = xFill(C.bgMid);
@@ -925,8 +936,8 @@ const XlsxExport = (() => {
       const tot = data.sybActive.reduce((s, t) => s + t.syb_net, 0);
       Object.assign(r4.getCell(1), {
         value: `🔍  Aktiv SYB: ${data.sybActive.map(t => t.key).join(', ')}   Cəmi: ${fmtRaw(tot)} ₼`,
-        font:  xFont('9333EA', true, 10),
-        fill:  xFill('1A0A2E'),
+        font:  xFont('6B21A8', true, 10),
+        fill:  xFill('F3E8FF'),
       });
     } else {
       r4.getCell(1).fill = xFill(C.bgMid);
