@@ -467,20 +467,17 @@ const Parser = (() => {
         else if (opType === 'Azalma') entry.azalma += amount;
 
         // ── Declaration counting ─────────────────────────────
-        // VAHID MUZDLU: group by date|declType to avoid triple-counting
-        // (portal emits 3 rows per quarter declaration — one per month)
-        if (DECL_PATTERN.test(opName) && opType !== 'Ödəniş') {
-          const declTypeMatch = opName.match(DECL_PATTERN);
-          if (declTypeMatch) {
-            if (key.startsWith('VAHID MUZDLU')) {
-              // Deduplicate by (date, declType) combination
-              entry.vahidDates.add(`${date}|${declTypeMatch[0]}`);
-            } else {
-              // Normalize "TAX - CARİ(B) / 1" → "TAX - CARİ(B)" to avoid
-              // counting sub-parts of the same declaration separately
-              const normalized = opName.replace(/\s*\/\s*\d+\s*$/, '').trim();
-              entry.declNames.add(normalized);
-            }
+        // Count real declarations:
+        // - Slash-free rows (e.g. "MV 2024 - DƏQİQLƏŞMİŞ(B)") = submitted by client → COUNT each one
+        // - "/N" rows (e.g. "MV 2024 - DƏQİQLƏŞMİŞ(B) / 1") = auto-generated avans corrections → SKIP
+        // - VAHID MUZDLU: portal emits 3 rows per quarter (one per month), deduplicate by date+type
+        const isSlashRow = /\/\s*\d+\s*$/.test(opName);
+        if (DECL_PATTERN.test(opName) && opType !== 'Ödəniş' && !isSlashRow) {
+          if (key.startsWith('VAHID MUZDLU')) {
+            const declTypeMatch = opName.match(DECL_PATTERN);
+            if (declTypeMatch) entry.vahidDates.add(`${date}|${declTypeMatch[0]}`);
+          } else {
+            entry.decl_count++;
           }
         }
       }
@@ -495,7 +492,7 @@ const Parser = (() => {
       hesablama: 0, azalma: 0,
       kyb_hesablama: 0, kyb_azalma: 0, has_kyb: false, has_kybl: false,
       syb_hesablama: 0, syb_azalma: 0, has_syb: false,
-      declNames:   new Set(),   // for non-VAHID taxes
+      decl_count:  0,            // real declarations submitted by client (slash-free rows only)
       vahidDates:  new Set(),   // for VAHID MUZDLU deduplication
     };
   }
@@ -519,10 +516,10 @@ const Parser = (() => {
       t.total_azalma    = t.azalma    + t.kyb_azalma    + t.syb_azalma;
       t.total_net       = t.total_hesablama - t.total_azalma;
 
-      // Declaration count
+      // Declaration count: already accumulated as decl_count (slash-free rows only)
       t.decl_count = t.key.startsWith('VAHID MUZDLU')
         ? t.vahidDates.size
-        : t.declNames.size;
+        : t.decl_count;
     }
 
     return Object.values(taxMap)
