@@ -394,6 +394,10 @@ const Parser = (() => {
     const headerRow = taxTable.querySelector('tr');
     const headers   = [...headerRow.querySelectorAll('td')].map(td => td.textContent.trim());
 
+    // Dynamically find "Miqdar (Manat)" column index (handles extra columns like "Miqdar (ABŞ$)")
+    let amountIdx = headers.findIndex(h => h.includes('Miqdar') && h.includes('Manat'));
+    if (amountIdx === -1) amountIdx = 4; // fallback
+
     const rows = [...taxTable.querySelectorAll('tr')].slice(1);
     const result = [];
     for (const row of rows) {
@@ -404,7 +408,7 @@ const Parser = (() => {
         opName:  cells[1],
         opType:  cells[2], // Hesablama | Azalma | Ödəniş
         col3:    cells[3],
-        amount:  parseAmount(cells[4]),
+        amount:  parseAmount(cells[amountIdx]),
       });
     }
     return result;
@@ -472,7 +476,10 @@ const Parser = (() => {
               // Deduplicate by (date, declType) combination
               entry.vahidDates.add(`${date}|${declTypeMatch[0]}`);
             } else {
-              entry.declNames.add(opName);
+              // Normalize "TAX - CARİ(B) / 1" → "TAX - CARİ(B)" to avoid
+              // counting sub-parts of the same declaration separately
+              const normalized = opName.replace(/\s*\/\s*\d+\s*$/, '').trim();
+              entry.declNames.add(normalized);
             }
           }
         }
