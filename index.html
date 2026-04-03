@@ -988,7 +988,8 @@ const XlsxExport = (() => {
 
     // Data rows
     data.taxes.forEach((t, i) => {
-      const rowBg = i % 2 === 0 ? C.bgDark : C.bgMid;
+      const hasKyb = t.kyb_hesablama > 0;
+      const rowBg = hasKyb ? (i % 2 === 0 ? 'FFFBEB' : 'FEFCE8') : (i % 2 === 0 ? C.bgDark : C.bgMid);
       const kybBg = t.kyb_status === 'active' ? C.redDark    : rowBg;
       const sybBg = t.syb_status === 'active' ? C.purpleDark : rowBg;
 
