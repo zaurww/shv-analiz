@@ -641,14 +641,7 @@ const Renderer = (() => {
       ${chipsHTML(data, kybActive, kybTotal, sybActive, sybTotal, debtClass)}
       <div class="section-title">Vergilər üzrə analiz</div>
       <div class="table-wrap">${taxTableHTML(data.taxes)}</div>
-      ${kybCancelled.length > 0 ? `
-        <div class="section-title">Ləğv edilmiş KYB-lər</div>
-        <div class="table-wrap">${cancelledTableHTML(kybCancelled, 'kyb')}</div>
-      ` : ''}
-      ${sybCancelled.length > 0 ? `
-        <div class="section-title">Ləğv edilmiş SYB-lər</div>
-        <div class="table-wrap">${cancelledTableHTML(sybCancelled, 'syb')}</div>
-      ` : ''}
+
       <div class="action-row">
         <button class="btn btn-primary" onclick="XlsxExport.download(window._analysisData)">⬇ XLSX yüklə</button>
         <button class="btn btn-secondary" onclick="location.reload()">↩ Yeni fayl</button>
@@ -721,52 +714,56 @@ const Renderer = (() => {
   }
 
   // ── 4.5 Main tax table (13 columns) ──────────────────────────
-  // Columns: Tax | Decl | Müş-Hes | KYB-Hes | SYB-Hes | Cəmi-Hes |
-  //           Müş-Az | KYB-Az | SYB-Az | Cəmi-Az | Net | KYB | SYB
+  // Columns: Tax | Decl | Bəy[Hes|Az|Net] | KYB[Hes|Az|Net|St] | SYB[Hes|Az|Net|St] | Cəmi Qalıq
   function taxTableHTML(taxes) {
     const rows = taxes.map(t => {
       const declCell = t.decl_count > 0
         ? `<span style="color:var(--accent);font-weight:600">${t.decl_count}</span>`
         : `<span class="num-zero">—</span>`;
+      const clientNet = t.hesablama - t.azalma;
       return `
         <tr>
           <td>${esc(t.key)}</td>
           <td style="text-align:center">${declCell}</td>
           <td>${fmt(t.hesablama)}</td>
-          <td>${fmt(t.kyb_hesablama)}</td>
-          <td>${fmt(t.syb_hesablama)}</td>
-          <td>${fmt(t.total_hesablama)}</td>
           <td>${fmt(t.azalma)}</td>
+          <td><b>${fmt(clientNet)}</b></td>
+          <td>${fmt(t.kyb_hesablama)}</td>
           <td>${fmt(t.kyb_azalma)}</td>
+          <td><b>${fmt(t.kyb_net)}</b></td>
+          <td style="text-align:center">${statusBadgeHTML('kyb', t.kyb_status, t.kyb_net)}</td>
+          <td>${fmt(t.syb_hesablama)}</td>
           <td>${fmt(t.syb_azalma)}</td>
-          <td>${fmt(t.total_azalma)}</td>
+          <td><b>${fmt(t.syb_net)}</b></td>
+          <td style="text-align:center">${statusBadgeHTML('syb', t.syb_status, t.syb_net)}</td>
           <td><b>${fmt(t.total_net)}</b></td>
-          <td>${statusBadgeHTML('kyb', t.kyb_status, t.kyb_net)}</td>
-          <td>${statusBadgeHTML('syb', t.syb_status, t.syb_net)}</td>
         </tr>`;
     }).join('');
 
+    const thC = 'style="text-align:center;padding:5px 8px;border-bottom:2px solid"';
     return `
       <table>
         <thead>
           <tr>
             <th rowspan="2" style="vertical-align:middle;text-align:left">Vergi / Dövr</th>
             <th rowspan="2" style="vertical-align:middle">Bəyannamə</th>
-            <th colspan="4" style="text-align:center;color:var(--accent)">Hesablama</th>
-            <th colspan="4" style="text-align:center;color:var(--yellow)">Azalma</th>
+            <th colspan="3" style="text-align:center;color:var(--accent);border-bottom:2px solid var(--accent)">Bəyannamə üzrə</th>
+            <th colspan="4" style="text-align:center;color:var(--yellow);border-bottom:2px solid var(--yellow)">KYB (Kameral)</th>
+            <th colspan="4" style="text-align:center;color:var(--purple);border-bottom:2px solid var(--purple)">SYB (Səyyar)</th>
             <th rowspan="2" style="vertical-align:middle">Cəmi Qalıq</th>
-            <th rowspan="2" style="vertical-align:middle">KYB</th>
-            <th rowspan="2" style="vertical-align:middle">SYB</th>
           </tr>
           <tr>
-            <th>Müştəri</th>
-            <th>KYB</th>
-            <th>SYB</th>
-            <th>Cəmi</th>
-            <th>Müştəri</th>
-            <th>KYB/KYBL</th>
-            <th>SYB</th>
-            <th>Cəmi</th>
+            <th>Hesablama</th>
+            <th>Azalma</th>
+            <th>Net</th>
+            <th>Hesablama</th>
+            <th>Azalma</th>
+            <th>Net</th>
+            <th>Status</th>
+            <th>Hesablama</th>
+            <th>Azalma</th>
+            <th>Net</th>
+            <th>Status</th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
@@ -884,20 +881,20 @@ const XlsxExport = (() => {
       views: [{ state: 'frozen', ySplit: 7 }],
     });
 
-    // 13 data columns
+    // 14 data columns: Tax | Decl | Bəy[Hes,Az,Net] | KYB[Hes,Az,Net,St] | SYB[Hes,Az,Net,St] | CəmiNet
     ws.columns = [
       { width: 32 }, // Tax/Period
       { width: 11 }, // Decl
-      { width: 16 }, { width: 14 }, { width: 14 }, { width: 16 }, // Hes: Müş, KYB, SYB, Cəmi
-      { width: 16 }, { width: 14 }, { width: 14 }, { width: 16 }, // Az: Müş, KYB, SYB, Cəmi
-      { width: 16 }, // Net
-      { width: 18 }, { width: 18 }, // KYB status, SYB status
+      { width: 16 }, { width: 16 }, { width: 16 }, // Bəy: Hes, Az, Net
+      { width: 15 }, { width: 15 }, { width: 15 }, { width: 18 }, // KYB: Hes, Az, Net, Status
+      { width: 15 }, { width: 15 }, { width: 15 }, { width: 18 }, // SYB: Hes, Az, Net, Status
+      { width: 16 }, // Cəmi Qalıq
     ];
 
     const brd  = (style, col) => ({ bottom: { style, color: { argb: 'FF' + (col || C.border) } } });
 
     // Row 1 — Company name
-    ws.mergeCells('A1:M1');
+    ws.mergeCells('A1:N1');
     const r1 = ws.getRow(1); r1.height = 22;
     Object.assign(r1.getCell(1), {
       value: data.companyName,
@@ -907,7 +904,7 @@ const XlsxExport = (() => {
     });
 
     // Row 2 — Meta
-    ws.mergeCells('A2:M2');
+    ws.mergeCells('A2:N2');
     const r2 = ws.getRow(2); r2.height = 15;
     Object.assign(r2.getCell(1), {
       value: `VÖEN: ${data.voen}   |   Dövr: ${data.period}   |   Çap tarixi: ${data.printDate}`,
@@ -916,7 +913,7 @@ const XlsxExport = (() => {
     });
 
     // Row 3 — KYB alert
-    ws.mergeCells('A3:M3');
+    ws.mergeCells('A3:N3');
     const r3 = ws.getRow(3); r3.height = 16;
     if (data.kybActive.length > 0) {
       const tot = data.kybActive.reduce((s, t) => s + t.kyb_net, 0);
@@ -930,7 +927,7 @@ const XlsxExport = (() => {
     }
 
     // Row 4 — SYB alert
-    ws.mergeCells('A4:M4');
+    ws.mergeCells('A4:N4');
     const r4 = ws.getRow(4); r4.height = 16;
     if (data.sybActive.length > 0) {
       const tot = data.sybActive.reduce((s, t) => s + t.syb_net, 0);
@@ -944,23 +941,23 @@ const XlsxExport = (() => {
     }
 
     // Row 5 — blank spacer
-    ws.mergeCells('A5:M5');
+    ws.mergeCells('A5:N5');
     const r5 = ws.getRow(5); r5.height = 6;
     r5.getCell(1).fill = xFill(C.bgDark);
 
     // Row 6 — Group headers
-    ws.mergeCells('C6:F6');  // Hesablama
-    ws.mergeCells('G6:J6');  // Azalma
+    ws.mergeCells('C6:E6');  // Bəyannamə üzrə
+    ws.mergeCells('F6:I6');  // KYB
+    ws.mergeCells('J6:M6');  // SYB
     const r6 = ws.getRow(6); r6.height = 18;
-    for (let c = 1; c <= 13; c++) r6.getCell(c).fill = xFill(C.bgLight);
+    for (let c = 1; c <= 14; c++) r6.getCell(c).fill = xFill(C.bgLight);
     [
-      [1,  'Vergi / Dövr', C.bgLight,   C.text],
-      [2,  'Bəyannamə',   C.bgLight,   C.text],
-      [3,  'Hesablama',   C.blueDark,  C.blueLight],
-      [7,  'Azalma',      C.amberDark, C.amberLight],
-      [11, 'Cəmi Qalıq', C.bgLight,   C.text],
-      [12, 'KYB Status', C.bgLight,   C.text],
-      [13, 'SYB Status', C.bgLight,   C.text],
+      [1,  'Vergi / Dövr',    C.bgLight,   C.text],
+      [2,  'Bəyannamə',       C.bgLight,   C.text],
+      [3,  'Bəyannamə üzrə', C.blueDark,  C.blueLight],
+      [6,  'KYB (Kameral)',   C.amberDark, C.amberLight],
+      [10, 'SYB (Səyyar)',    '4A1D96',    'EDE9FE'],
+      [14, 'Cəmi Qalıq',     C.bgLight,   C.text],
     ].forEach(([col, val, bg, fg]) => {
       Object.assign(r6.getCell(col), {
         value:     val,
@@ -973,14 +970,30 @@ const XlsxExport = (() => {
 
     // Row 7 — Sub-headers
     const r7 = ws.getRow(7); r7.height = 15;
-    ['','','Müştəri','KYB','SYB','Cəmi','Müştəri','KYB/KYBL','SYB','Cəmi','','',''].forEach((v, i) => {
-      const col     = i + 1;
-      const isBlue  = col >= 3 && col <= 6;
-      const isAmber = col >= 7 && col <= 10;
+    [
+      // col: [label, isBlue, isAmber, isPurple]
+      ['', false, false, false],           // 1 Tax
+      ['', false, false, false],           // 2 Decl
+      ['Hesablama', true,  false, false],  // 3
+      ['Azalma',    true,  false, false],  // 4
+      ['Net',       true,  false, false],  // 5
+      ['Hesablama', false, true,  false],  // 6
+      ['Azalma',    false, true,  false],  // 7
+      ['Net',       false, true,  false],  // 8
+      ['Status',    false, true,  false],  // 9
+      ['Hesablama', false, false, true],   // 10
+      ['Azalma',    false, false, true],   // 11
+      ['Net',       false, false, true],   // 12
+      ['Status',    false, false, true],   // 13
+      ['',          false, false, false],  // 14 Cəmi
+    ].forEach(([v, isBlue, isAmber, isPurple], i) => {
+      const col = i + 1;
+      const bg  = isBlue ? C.blueDark : isAmber ? C.amberDark : isPurple ? '4A1D96' : C.bgMid;
+      const fg  = isBlue ? C.blueLight : isAmber ? C.amberLight : isPurple ? 'EDE9FE' : C.muted;
       Object.assign(r7.getCell(col), {
         value:     v,
-        font:      xFont(isBlue ? C.blueLight : isAmber ? C.amberLight : C.muted, true, 9),
-        fill:      xFill(isBlue ? C.blueDark : isAmber ? C.amberDark : C.bgMid),
+        font:      xFont(fg, true, 9),
+        fill:      xFill(bg),
         alignment: { horizontal: 'center', vertical: 'middle' },
         border:    brd('medium', C.blue),
       });
@@ -988,56 +1001,65 @@ const XlsxExport = (() => {
 
     // Data rows
     data.taxes.forEach((t, i) => {
-      const hasKyb = t.kyb_hesablama > 0;
-      const rowBg = hasKyb ? (i % 2 === 0 ? 'FFFBEB' : 'FEFCE8') : (i % 2 === 0 ? C.bgDark : C.bgMid);
-      const kybBg = t.kyb_status === 'active' ? C.redDark    : rowBg;
-      const sybBg = t.syb_status === 'active' ? C.purpleDark : rowBg;
+      const hasKyb  = t.kyb_hesablama > 0;
+      const rowBg   = hasKyb ? (i % 2 === 0 ? 'FFFBEB' : 'FEFCE8') : (i % 2 === 0 ? C.bgDark : C.bgMid);
+      const kybBg   = t.kyb_status === 'active' ? C.redDark    : rowBg;
+      const sybBg   = t.syb_status === 'active' ? C.purpleDark : rowBg;
+      const clientNet = t.hesablama - t.azalma;
 
       const dr = ws.addRow([
         t.key,
         t.decl_count      || null,
-        t.hesablama       || null,
-        t.kyb_hesablama   || null,
-        t.syb_hesablama   || null,
-        t.total_hesablama || null,
-        t.azalma          || null,
-        t.kyb_azalma      || null,
-        t.syb_azalma      || null,
-        t.total_azalma    || null,
-        t.total_net       || null,
-        STATUS_LABEL[t.kyb_status],
-        STATUS_LABEL[t.syb_status],
+        t.hesablama       || null,  // Bəy Hes
+        t.azalma          || null,  // Bəy Az
+        clientNet         || null,  // Bəy Net
+        t.kyb_hesablama   || null,  // KYB Hes
+        t.kyb_azalma      || null,  // KYB Az
+        t.kyb_net         || null,  // KYB Net
+        STATUS_LABEL[t.kyb_status], // KYB Status
+        t.syb_hesablama   || null,  // SYB Hes
+        t.syb_azalma      || null,  // SYB Az
+        t.syb_net         || null,  // SYB Net
+        STATUS_LABEL[t.syb_status], // SYB Status
+        t.total_net       || null,  // Cəmi Qalıq
       ]);
       dr.height = 17;
 
       dr.eachCell({ includeEmpty: true }, (cell, cn) => {
-        const isHes   = cn >= 3  && cn <= 6;
-        const isAz    = cn >= 7  && cn <= 10;
-        const isNum   = isHes || isAz;
-        const isNet   = cn === 11;
-        const isKybSt = cn === 12;
-        const isSybSt = cn === 13;
-        const isDecl  = cn === 2;
-        const isTax   = cn === 1;
+        const isBəy    = cn >= 3  && cn <= 5;
+        const isKyb    = cn >= 6  && cn <= 9;
+        const isSyb    = cn >= 10 && cn <= 13;
+        const isNum    = (isBəy) || (isKyb && cn !== 9) || (isSyb && cn !== 13);
+        const isNet    = cn === 14;
+        const isKybSt  = cn === 9;
+        const isSybSt  = cn === 13;
+        const isDecl   = cn === 2;
+        const isTax    = cn === 1;
 
-        // Background: status columns get their own colour, rest use rowBg
         const bg = isKybSt ? kybBg : isSybSt ? sybBg : rowBg;
         cell.fill      = xFill(bg);
         cell.border    = brd('thin');
         cell.alignment = {
-          horizontal: isNum || isDecl ? 'right' : (isKybSt || isSybSt) ? 'center' : 'left',
+          horizontal: isNum || isDecl || isNet ? 'right' : (isKybSt || isSybSt) ? 'center' : 'left',
           vertical: 'middle',
         };
 
-        const fg = isDecl  ? '60A5FA'
-          : isNet   ? (t.total_net < 0 ? C.red : t.total_net === 0 ? C.muted : C.text)
-          : isKybSt ? (t.kyb_status === 'active' ? C.red    : t.kyb_status === 'cancelled' ? C.green  : C.muted)
-          : isSybSt ? (t.syb_status === 'active' ? C.purple : t.syb_status === 'cancelled' ? C.green  : C.muted)
+        const isBəyNet = cn === 5;
+        const isKybNet = cn === 8;
+        const isSybNet = cn === 12;
+        const fg = isDecl   ? '60A5FA'
+          : isNet    ? (t.total_net  < 0 ? C.red    : t.total_net  === 0 ? C.muted : C.text)
+          : isBəyNet ? (clientNet    < 0 ? C.red    : clientNet    === 0 ? C.muted : C.text)
+          : isKybNet ? (t.kyb_net    < 0 ? C.green  : t.kyb_net    === 0 ? C.muted : C.red)
+          : isSybNet ? (t.syb_net    < 0 ? C.green  : t.syb_net    === 0 ? C.muted : C.purple)
+          : isKybSt  ? (t.kyb_status === 'active' ? C.red    : t.kyb_status === 'cancelled' ? C.green  : C.muted)
+          : isSybSt  ? (t.syb_status === 'active' ? C.purple : t.syb_status === 'cancelled' ? C.green  : C.muted)
           : C.text;
 
-        cell.font = xFont(fg, isNet || isTax, 10);
-        if (isNum || isNet) cell.numFmt = NUM_FMT;
-        if (isDecl)         cell.numFmt = NUM_FMT_INT;
+        const isBold = isNet || isTax || isBəyNet || isKybNet || isSybNet;
+        cell.font = xFont(fg, isBold, 10);
+        if (isNum || isNet || isBəyNet || isKybNet || isSybNet) cell.numFmt = NUM_FMT;
+        if (isDecl) cell.numFmt = NUM_FMT_INT;
       });
     });
 
