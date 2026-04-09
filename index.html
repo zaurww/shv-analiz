@@ -1283,18 +1283,18 @@ const MV_LABELS = {
   '1042': { beyCode:'219',      label:'Ümumi gəlirdən çıxılamalar' },
   '1045': { beyCode:'219.3',    label:'Xarici valyutaların manata nisbətən məzənnəsinin dəyişməsindən yaranan mənfi fərq' },
   '1056': { beyCode:'220',      label:'Çıxılamalardan sonra ÜMUMİ GƏLİR' },
-  // ── vergiHesab: digər xərclər (bagliHarc-da artıq var, burada sıfır olduqda göstərilmir)
-  '1022': { beyCode:'228',    label:'Təmir xərcləri' },
-  '1023': { beyCode:'228.1',  label:'Binalar, tikililər və qurğular üzrə hesablanmış təmir xərcləri' },
-  '1102': { beyCode:'230*',   label:'Sığorta üzrə xərclər (vergiHesab)' },
-  '1106': { beyCode:'231*',   label:'Digər qiymətli kağızların alınması ilə bağlı xərclər (vergiHesab)' },
-  '1031': { beyCode:'222*',   label:'Borcа görə faizlər (vergiHesab)' },
-  '1076': { beyCode:'227.10', label:'Yüksək texnologiyalar məhsulu olan hesablama texnikası üzrə hesablanmış amortizasiya' },
-  // ── hesabatDovruVergiHesab: Verginin hesablanması (sat.237–245) ─
-  '3001': { beyCode:'237',    label:'Vergitutma məqsədləri üçün mənfəət (sat.220 - sat.236)' },
-  '3002': { beyCode:'238',    label:'Mənfəət üzrə azadolmalar və güzəştlər (sətrin təsnifatı 5 №-li Əlavə ilə təqdim olunur)' },
-  '3003': { beyCode:'239',    label:'Zərər (sat.236 - sat.220)' },
-  '3004': { beyCode:'241',    label:'Mənfəət üzrə azadolma, güzəşt və keçmiş illərin zərəri çıxılmaqla vergiyə cəlb olunan mənfəət (sat.237-(sat.238+sat.240))' },
+  // ── vergiHesab: Xərclər ──────────────────────────────────────
+  '1022': { beyCode:'228',      label:'Təmir xərcləri' },
+  '1023': { beyCode:'228.1',    label:'Binalar, tikililər və qurğular üzrə hesablanmış təmir xərcləri' },
+  '1102': { beyCode:'230',      label:'Sığorta üzrə xərclər' },
+  '1106': { beyCode:'231',      label:'Digər qiymətli kağızların, borc öhdəliklərinin... alınması ilə bağlı xərclər' },
+  '1031': { beyCode:'222',      label:'Borcа görə faizlər və onunla bağlı olan xərclər' },
+  '1076': { beyCode:'227.10',   label:'Yüksək texnologiyalar məhsulu olan hesablama texnikası üzrə hesablanmış amortizasiya' },
+  // ── hesabatDovruVergiHesab: Verginin hesablanması (sat.237–245)
+  '3001': { beyCode:'237',      label:'Vergitutma məqsədləri üçün mənfəət (sat.220 - sat.236)' },
+  '3002': { beyCode:'238',      label:'Mənfəət üzrə azadolmalar və güzəştlər' },
+  '3003': { beyCode:'239',      label:'Zərər (sat.236 - sat.220)' },
+  '3004': { beyCode:'240',      label:'Mənfəət hesabına kompensasiya edilən keçmiş illərin zərəri' },
   // ── bagliHarc: Xərclər detalları (sat.221–236) ───────────────
   '2001': { beyCode:'221',      label:'Malların təqdim edilməsi, iş görülməsi və xidmət göstərilməsi üzrə xərclər' },
   '2002': { beyCode:'221.1',    label:'Əmək haqqı və ona bərabər tutulan ödəmələr' },
@@ -1328,55 +1328,78 @@ const MV_LABELS = {
   '2052': { beyCode:'230',      label:'Sığorta üzrə xərclər' },
   '2053': { beyCode:'230.1',    label:'Sığorta fəaliyyəti üzrə xərclər' },
   '2057': { beyCode:'230.2',    label:'Ödənilmiş sığorta haqqları' },
-  '2062': { beyCode:'231b',     label:'Digər qiymətli kağızlar, borc öhdəlikləri alınması ilə bağlı xərclər (2)' },
+  '2062': { beyCode:'231',      label:'Digər qiymətli kağızlar, borc öhdəlikləri alınması ilə bağlı xərclər' },
   '2063': { beyCode:'232',      label:'Digər xərclər' },
   '2064': { beyCode:'233',      label:'Gəlirdən çıxılan vergilər və yığımlar' },
   '2066': { beyCode:'233.2',    label:'Əmlak vergisi' },
   '2071': { beyCode:'234',      label:'CƏMİ XƏRCLƏR' },
   '2073': { beyCode:'236',      label:'Ümumi gəlirlərdən çıxılan xərclər (sat.234 - sat.235)' },
-  // ── aktivler (Əlavə 1) ─ PDF Əlavə №1 ilə tutuşdurulub ───────
-  '4017': { beyCode:'1',        label:'Cəmi aktivlər' },
-  '4022': { beyCode:'2',        label:'Cəmi kapital və öhdəliklər' },
-  '4047': { beyCode:'1.1',      label:'Əsas vəsaitlərin dəyəri' },
-  '4051': { beyCode:'1.1.1',    label:'Torpaqların yaxşılaşdırılması üzrə kapitallaşdırılmış xərclər, binalar, tikililər və qurğular' },
-  '4048': { beyCode:'1.2',      label:'Qeyri-maddi aktivlərin dəyəri' },
-  '4010': { beyCode:'1.2.1',    label:'İstifadə müddəti məlum olmayan qeyri-maddi aktivlərin dəyəri' },
-  '4040': { beyCode:'1.3',      label:'Ehtiyatlar' },
-  '4041': { beyCode:'1.3.1',    label:'Hazır məhsul' },
-  '4005': { beyCode:'1.3.2',    label:'Mallar' },
-  '4042': { beyCode:'1.3.3',    label:'Bitməmiş istehsalat' },
-  '4043': { beyCode:'1.3.4',    label:'Sair ehtiyatlar' },
-  '4044': { beyCode:'1.3.5',    label:'Digər ehtiyat növü' },
-  '4015': { beyCode:'1.4',      label:'Debitor borcları' },
-  '4053': { beyCode:'1.4.1',    label:'Dövlət büdcəsinə (vergilər üzrə) debitor borcu' },
-  '4054': { beyCode:'1.4.2',    label:'Sair debitor borcları' },
-  '4011': { beyCode:'1.5',      label:'Pul vəsaitləri' },
-  '4004': { beyCode:'1.6',      label:'Səhmlər və iştirak payları üzrə maliyyə qoyuluşları' },
-  '4012': { beyCode:'1.7',      label:'Dövlət qiymətli kağızları' },
-  '4018': { beyCode:'1.8',      label:'Kapitallaşdırma üçün aktivlər' },
-  '4046': { beyCode:'1.9',      label:'Gələcək dövrün xərcləri' },
-  '4049': { beyCode:'1.10',     label:'Digər aktivlər' },
-  '4019': { beyCode:'1.4.1*',   label:'Dövlət büdcəsinə vergi debitor borcu (alternativ)' },
-  '4020': { beyCode:'2.2.3',    label:'Digər öhdəliklər' },
-  '4021': { beyCode:'1.*',      label:'Digər aktivlər' },
-  // ── kapitalEhtiyatlar (Əlavə 1) ─ PDF Əlavə №1 ilə tutuşdurulub
-  '4023': { beyCode:'1',        label:'Cəmi aktivlər (Əlavə 1, balans)' },
+  // ── aktivler (Əlavə 1) ─ PDF Əlavə №1 şəkilləri ilə tam tutuşdurulub ──
+  // PDF sat.1 — Cəmi aktivlər
+  '4001': { beyCode:'1',      label:'Cəmi aktivlər' },
+  // PDF sat.1.1 — Əsas vəsaitlər
+  '4002': { beyCode:'1.1',    label:'Əsas vəsaitlərin dəyəri' },
+  '4003': { beyCode:'1.1.1',  label:'Torpaqların yaxşılaşdırılması üzrə kapitallaşdırılmış xərclər, binalar, tikililər və qurğular' },
+  '4007': { beyCode:'1.1.5',  label:'Digər əsas vəsaitlər' },
+  '4045': { beyCode:'1.1.6',  label:'Yüksək texnologiyalar məhsulu olan hesablama texnikası' },
+  // PDF sat.1.2 — Qeyri-maddi aktivlər
+  '4008': { beyCode:'1.2',    label:'Qeyri-maddi aktivlərin dəyəri' },
+  '4050': { beyCode:'1.2.1',  label:'İstifadə müddəti məlum olmayan qeyri-maddi aktivlərin dəyəri' },
+  // PDF sat.1.3 — Ehtiyatlar
+  '4040': { beyCode:'1.3',    label:'Ehtiyatlar' },
+  '4041': { beyCode:'1.3.1',  label:'Hazır məhsul' },
+  '4005': { beyCode:'1.3.2',  label:'Mallar' },
+  '4042': { beyCode:'1.3.3',  label:'Bitməmiş istehsalat' },
+  '4043': { beyCode:'1.3.4',  label:'Sair ehtiyatlar' },
+  // PDF sat.1.4 — Debitor borcları
+  '4014': { beyCode:'1.4',    label:'Debitor borcları' },
+  '4015': { beyCode:'1.4.1',  label:'Dövlət büdcəsinə (vergilər üzrə) debitor borcu' },
+  '4016': { beyCode:'1.4.2',  label:'Sair debitor borcları' },
+  // PDF sat.1.5 — Pul vəsaitləri
+  '4017': { beyCode:'1.5',    label:'Pul vəsaitləri' },
+  // PDF sat.1.10 — Digər aktivlər
+  '4022': { beyCode:'1.10',   label:'Digər aktivlər' },
+  // Köhnə kodlar — PDF-də uyğunluq tapılmadı, sıfır
+  '4004': { beyCode:'—',      label:'Səhmlər və iştirak payları üzrə maliyyə qoyuluşları' },
+  '4006': { beyCode:'—',      label:'Göstərici 4006' },
+  '4009': { beyCode:'—',      label:'Göstərici 4009' },
+  '4010': { beyCode:'—',      label:'Göstərici 4010' },
+  '4011': { beyCode:'—',      label:'Göstərici 4011' },
+  '4012': { beyCode:'—',      label:'Göstərici 4012' },
+  '4013': { beyCode:'—',      label:'Göstərici 4013' },
+  '4018': { beyCode:'—',      label:'Göstərici 4018' },
+  '4019': { beyCode:'—',      label:'Göstərici 4019' },
+  '4020': { beyCode:'—',      label:'Göstərici 4020' },
+  '4021': { beyCode:'—',      label:'Göstərici 4021' },
+  '4044': { beyCode:'—',      label:'Göstərici 4044' },
+  '4046': { beyCode:'—',      label:'Göstərici 4046' },
+  '4047': { beyCode:'—',      label:'Göstərici 4047' },
+  '4048': { beyCode:'—',      label:'Göstərici 4048' },
+  '4049': { beyCode:'—',      label:'Göstərici 4049' },
+  '4051': { beyCode:'—',      label:'Göstərici 4051' },
+  '4053': { beyCode:'—',      label:'Göstərici 4053' },
+  '4054': { beyCode:'—',      label:'Göstərici 4054' },
+  // ── kapitalEhtiyatlar (Əlavə 1) ─ PDF Əlavə №1 şəkilləri ilə tutuşdurulub ──
+  // PDF sat.2 — Cəmi kapital və öhdəliklər
+  '4023': { beyCode:'2',        label:'Cəmi kapital və öhdəliklər' },
+  // PDF sat.2.1 — Kapital
   '5001': { beyCode:'2.1',      label:'Cəmi kapital' },
   '4024': { beyCode:'2.1.1',    label:'Nizamnamə kapitalı' },
   '4025': { beyCode:'2.1.2',    label:'Hesabat dövrünün xalis mənfəəti' },
   '4026': { beyCode:'2.1.3',    label:'Əvvəlki illər üzrə bölüşdürülməmiş mənfəət' },
   '7001': { beyCode:'2.1.4',    label:'Emissiya gəliri' },
   '7002': { beyCode:'2.1.5',    label:'Kapital ehtiyatları' },
-  '4028': { beyCode:'2',        label:'Cəmi kapital və öhdəliklər' },
+  // PDF sat.2.2 — Öhdəliklər
   '6001': { beyCode:'2.2',      label:'Cəmi öhdəliklər' },
   '4027': { beyCode:'2.2.1',    label:'Kreditor borcları' },
-  '4029': { beyCode:'2.2.1.1',  label:'Bank kreditləri' },
-  '4030': { beyCode:'2.2.1.1.1',label:'O cümlədən xarici borclar' },
+  '4028': { beyCode:'2.2.1.1',  label:'Bank kreditləri' },
+  '4029': { beyCode:'2.2.1.1.1',label:'O cümlədən xarici borclar' },
   '4031': { beyCode:'2.2.1.2',  label:'Alınmış avanslar' },
   '4052': { beyCode:'2.2.1.5',  label:'Sair kreditor borcları' },
   '4032': { beyCode:'2.2.1.5.1',label:'O cümlədən xarici borclar (sair)' },
-  '4034': { beyCode:'2.2.2',    label:'Digər öhdəliklər alt-maddəsi' },
-  '4033': { beyCode:'2.2.3',    label:'Digər öhdəliklər' },
+  '4034': { beyCode:'2.2.3',    label:'Digər öhdəliklər' },
+  '4033': { beyCode:'—',        label:'Göstərici 4033' },
+  '4030': { beyCode:'—',        label:'Göstərici 4030' },
   '5050': { beyCode:'—',        label:'Xüsusi vergi rejimi' },
 };
 
@@ -1562,28 +1585,20 @@ const XmlRenderer = (() => {
     const el = document.getElementById('xml-results');
     el.style.display = 'block';
 
-    const gelir = data.allData['1041']?.mebleg || 0;  // sat.218 ÜMUMİ GƏLİRLƏR
-    const xrc   = data.allData['2071']?.mebleg || 0;  // sat.234 CƏMİ XƏRCLƏR
-    const mv    = data.allData['3001']?.mebleg || 0;  // sat.237 Vergitutma mənfəəti
+    const gelir = data.allData['1001']?.mebleg || 0;
+    const xrc   = data.allData['1041']?.mebleg || 0;
+    const mv    = data.allData['1042']?.mebleg || 0;
 
     const aktivKeys = Object.keys(data.allData).filter(k => k.startsWith('A_')).sort();
     const kapKeys   = Object.keys(data.allData).filter(k => k.startsWith('K_')).sort();
 
     const sections = [
-      // PDF: sat.200–220 — Gəlirlər + çıxılamalar
-      { title:'💰 Gəlirlər (sat.200–220)',
-        codes:['1001','1002','1012','1013','1016','1021','1034','1006',
-               '1041','1042','1045','1056'] },
-      // PDF: sat.221–236 — Xərclər (bagliHarc)
-      { title:'📉 Xərclər (sat.221–236)',
-        codes:['2001','2002','2003','2004','2005','2007','2008','1200','2009',
-               '2011','2012','2014','2016','2018','2019','2020',
-               '2021','2022','2023','2027','2031','2033','2034',
-               '2039','2140','2040','2043','2049','2050','2052','2053','2057',
-               '2063','2064','2066','2071','2073'] },
-      // PDF: sat.237+ — Verginin hesablanması
-      { title:'🧾 Verginin hesablanması (sat.237+)',
-        codes:['3001','3002','3003','3004','1022','1023','1076'] },
+      { title:'💰 Gəlirlər',                      codes:['1001','1002','1012','1013','1016'] },
+      { title:'📉 Xərclər',                        codes:['1021','1022','1023','1102','1106','1031','1034','1006','1041','1042','1045','1056','1076'] },
+      { title:'🧾 Vergi hesabı (hesabat dövrü)',   codes:['3001','3002','3003','3004'] },
+      { title:'🏦 Balans — Aktivlər',              codes:['2001','2002','2003','2004','2005','2007','2008','1200','2009','2011','2012','2014','2016','2018','2019'] },
+      { title:'📋 Balans — Öhdəliklər & Kapital',  codes:['2020','2021','2022','2023','2027','2031','2033','2034','2039','2140','2040','2043','2049','2050','2052','2053','2057','2062'] },
+      { title:'🔄 Gəlir/Xərc dövriyyəsi',         codes:['2063','2064','2066','2071','2073'] },
     ];
 
     let html = `
@@ -1598,11 +1613,11 @@ const XmlRenderer = (() => {
         </div>
       </div>
       <div class="summary-row">
-        <div class="chip"><div class="chip-label">Büdcəyə ödənilməli (sat.243)</div><div class="chip-value ${data.budce>0?'danger':'ok'}">${data.budce.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼</div></div>
-        <div class="chip"><div class="chip-label">Ümumi gəlir (sat.218)</div><div class="chip-value ok">${gelir.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼</div></div>
-        <div class="chip"><div class="chip-label">Cəmi xərclər (sat.234)</div><div class="chip-value">${xrc.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼</div></div>
-        <div class="chip"><div class="chip-label">Vergitutma mənfəəti (sat.237)</div><div class="chip-value ${mv>0?'ok':'danger'}">${mv.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼</div></div>
-        <div class="chip"><div class="chip-label">Ümidsiz borc (Əlavə 3)</div><div class="chip-value ${data.umidsizBorc>0?'danger':'ok'}">${data.umidsizBorc.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼</div></div>
+        <div class="chip"><div class="chip-label">Büdcəyə ödənilməli</div><div class="chip-value ${data.budce>0?'danger':'ok'}">${data.budce.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼</div></div>
+        <div class="chip"><div class="chip-label">Cəmi gəlir</div><div class="chip-value ok">${gelir.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼</div></div>
+        <div class="chip"><div class="chip-label">Cəmi xərclər</div><div class="chip-value">${xrc.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼</div></div>
+        <div class="chip"><div class="chip-label">Vergiyə cəlb olunan mənfəət</div><div class="chip-value ${mv>0?'ok':'danger'}">${mv.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼</div></div>
+        <div class="chip"><div class="chip-label">Ümidsiz borc</div><div class="chip-value ${data.umidsizBorc>0?'danger':'ok'}">${data.umidsizBorc.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼</div></div>
       </div>`;
 
     for (const sec of sections) {
@@ -1663,12 +1678,12 @@ const XmlExporter = (() => {
       });
       ws1.getRow(2).height = 14;
 
-      const gelir = data.allData['1041']?.mebleg || 0;  // sat.218
-      const xrc   = data.allData['2071']?.mebleg || 0;  // sat.234
-      const mv    = data.allData['3001']?.mebleg || 0;  // sat.237
+      const gelir = data.allData['1001']?.mebleg || 0;
+      const xrc   = data.allData['1041']?.mebleg || 0;
+      const mv    = data.allData['1042']?.mebleg || 0;
       ws1.mergeCells('A3:D3');
       Object.assign(ws1.getRow(3).getCell(1), {
-        value:`Ümumi gəlir (218): ${gelir.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼   |   Cəmi xərclər (234): ${xrc.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼   |   Vergitutma mənfəəti (237): ${mv.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼   |   Büdcəyə (243): ${data.budce.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼`,
+        value:`Gəlir: ${gelir.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼   |   Xərclər: ${xrc.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼   |   Mənfəət: ${mv.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼   |   Büdcəyə: ${data.budce.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼`,
         font:fn(data.budce>0?'B45309':'065F46',true,10), fill:fl(data.budce>0?'FEF3C7':'D1FAE5'), alignment:aL(),
       });
       ws1.getRow(3).height = 18;
@@ -1682,22 +1697,14 @@ const XmlExporter = (() => {
         c.alignment = i===3?aR():i<2?aC():aL(); c.border=brd();
       });
 
-      const KEY_CODES = new Set(['1041','1056','2071','3001','3004']);
+      const KEY_CODES = new Set(['1001','1041','1042','1056','3003']);
       const simpleSecs = [
-        // PDF: sat.200–220 — Gəlirlər + çıxılamalar
-        { title:'GƏLİRLƏR (sat.200–220)',
-          codes:['1001','1002','1012','1013','1016','1021','1034','1006',
-                 '1041','1042','1045','1056'] },
-        // PDF: sat.221–236 — Xərclər (bagliHarc)
-        { title:'XƏRCLƏR (sat.221–236)',
-          codes:['2001','2002','2003','2004','2005','2007','2008','1200','2009',
-                 '2011','2012','2014','2016','2018','2019','2020',
-                 '2021','2022','2023','2027','2031','2033','2034',
-                 '2039','2140','2040','2043','2049','2050','2052','2053','2057',
-                 '2063','2064','2066','2071','2073'] },
-        // PDF: sat.237+ — Verginin hesablanması
-        { title:'VERGİNİN HESABLANMASI (sat.237+)',
-          codes:['3001','3002','3003','3004','1022','1023','1076'] },
+        { title:'GƏLİRLƏR',               codes:['1001','1002','1012','1013','1016'] },
+        { title:'XƏRCLƏR',                 codes:['1021','1022','1023','1102','1106','1031','1034','1006','1041','1042','1045','1056','1076'] },
+        { title:'VERGİ HESABI',            codes:['3001','3002','3003','3004'] },
+        { title:'BALANS — AKTİVLƏR',       codes:['2001','2002','2003','2004','2005','2007','2008','1200','2009','2011','2012','2014','2016','2018','2019'] },
+        { title:'BALANS — ÖHDƏLİKLƏR & KAPİTAL', codes:['2020','2021','2022','2023','2027','2031','2033','2034','2039','2140','2040','2043','2049','2050','2052','2053','2057','2062'] },
+        { title:'GƏLİR/XƏRC DÖVRİYYƏSİ', codes:['2063','2064','2066','2071','2073'] },
       ];
       let ri = 6;
       for (const sec of simpleSecs) {
