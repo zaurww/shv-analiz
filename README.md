@@ -1,11 +1,15 @@
 # shv-analiz
 
-Анализатор выписки личного налогового счёта (Şəxsi Hesab Vərəqəsi) с портала налоговой службы Азербайджана.
+Анализатор выписки личного налогового счёта (Şəxsi Hesab Vərəqəsi) + анализатор XML декларации по налогу на прибыль (Mənfəət Vergisi).
 
-**Live:** https://zaurww.github.io/shv-analiz/  
+**Live (актуальная версия всегда здесь):** https://zaurww.github.io/shv-analiz/  
 **Repo:** https://github.com/zaurww/shv-analiz (Public)  
-**Stack:** Один HTML-файл, без бэкенда, без сборки. ExcelJS 4.3.0 через CDN.  
-**Deploy:** Загрузи `index.html` в GitHub → commit → сразу в эфире через Pages.
+**Stack:** Один HTML-файл (`index.html`), без бэкенда, без сборки. ExcelJS 4.3.0 через CDN.  
+**Deploy:** Загрузи `index.html` на GitHub → commit → сразу в эфире через Pages.
+
+> **⚠️ ВАЖНО ДЛЯ CLAUDE:** Актуальный код всегда на https://zaurww.github.io/shv-analiz/  
+> Перед любыми изменениями **сначала fetch этот URL**, чтобы видеть последнюю версию.  
+> Не опирайся на файлы из прошлых разговоров — они могут быть устаревшими.
 
 > **Язык чата:** По умолчанию общаемся на **русском**. Интерфейс и комментарии в коде — на азербайджанском/английском.
 
@@ -13,267 +17,233 @@
 
 ## Что делает
 
-Пользователь перетаскивает `.xls`-файл, скачанный с налогового портала (на самом деле это HTML-таблица в кодировке ISO-8859-1) → приложение парсит его в браузере → отображает таблицу анализа → экспортирует в XLSX.
+Два независимых модуля в одном файле, переключаются вкладками в шапке:
+
+### Вкладка 1 — 📋 Şəxsi Hesab (личный счёт)
+Пользователь перетаскивает `.xls`-файл, скачанный с налогового портала (на самом деле HTML-таблица в кодировке ISO-8859-1) → приложение парсит в браузере → показывает таблицу анализа с KYB/SYB → экспортирует в XLSX.
+
+### Вкладка 2 — 📄 MV Bəyannaməsi XML (декларация по налогу на прибыль)
+Пользователь перетаскивает `.xml`-файл, скачанный с портала new.e-taxes.gov.az (кнопка "XML endir" в разделе Bəyannamələr) → приложение парсит → показывает все показатели с кодами → экспортирует в XLSX (3 листа).
 
 ---
 
 ## Структура файла
 
-Весь код в `index.html` (~1185 строк), разбит на 8 секций:
+Весь код в `index.html` (~1780 строк), разбит на 10 секций:
 
 | Секция | Модуль | Ответственность |
 |---|---|---|
 | 1 | Constants | `TAX_ORDER`, `DECL_PATTERN` |
-| 2 | File I/O | Drag & drop, FileReader (`iso-8859-1`) |
+| 2 | File I/O | Drag & drop, FileReader (`iso-8859-1`) — для XLS |
 | 3 | `Parser` IIFE | Сырой HTML → объект `AnalysisData` |
 | 4 | `Renderer` IIFE | `AnalysisData` → DOM (innerHTML) |
 | 5 | `XlsxExport` IIFE | `AnalysisData` → ExcelJS workbook → скачивание |
 | 6 | Format helpers | `fmt()`, `fmtRaw()`, `esc()` — чистые функции |
 | 7 | UI helpers | `ui.showSpinner`, `ui.showError` |
 | 8 | Bootstrap | `initDropZone()` |
+| 9 | Tab switch | `switchTab('shv'/'xml')` — переключение вкладок |
+| 10 | XML Module | `MV_LABELS`, `XmlParser`, `XmlRenderer`, `XmlExporter` |
 
-Глобальное состояние: `window._analysisData` — устанавливается после парсинга, читается при XLSX-экспорте.
+Глобальное состояние:
+- `window._analysisData` — XLS-анализ (Section 3), читается при XLSX-экспорте
+- `window._xmlData` — XML-анализ (Section 10), читается при XLSX-экспорте
 
 ---
 
-## Форма входного файла
+## XML модуль (Section 10) — MV Bəyannaməsi
+
+### Формат входного файла
+
+XML-файл скачивается с нового портала `new.e-taxes.gov.az` → Bəyannamələr → "..." → "XML endir".  
+Тип декларации: `MENFEET_1` (Mənfəət Vergisi — налог на прибыль).  
+Кодировка: UTF-8. Корневой тег: `<beyanname kodVer="MENFEET_1">`.
+
+**⚠️ XSD недоступен:** XSD-файл (`MENFEET_1.xsd`) не отдаётся порталом публично.  
+Маппинг кодов выполнен вручную сопоставлением XML-сумм с PDF-декларацией.
+
+### Секции XML
+
+| XML-секция | Тип данных | Поля |
+|---|---|---|
+| `vergiHesab` | Простые строки | `<gosterici>` + `<mebleg>` |
+| `bagliHarc` | Простые строки | `<gosterici>` + `<mebleg>` |
+| `hesabatDovruVergiHesab1` | Простые строки | `<gosterici>` + `<mebleg>` |
+| `aktivler` | Таблица движения | `evveline / dahilOlunan / takdimEdilen / sonuna` |
+| `kapitalEhtiyatlar` | Таблица движения | `evveline / dahilOlunan / takdimEdilen / silinen / sonuna` |
+
+В `allData` ключи:
+- Простые: `'1001'`, `'2001'` и т.д. → `{ mebleg }`
+- Активлер: `'A_4017'`, `'A_4015'` и т.д. → `{ evvel, dahil, takdim, son }`
+- Капитал: `'K_4023'`, `'K_6001'` и т.д. → `{ evvel, dahil, takdim, silen, son }`
+
+### MV_LABELS — маппинг кодов
+
+Каждый XML-код имеет два атрибута:
+```js
+MV_LABELS = {
+  '1001': { beyCode: '200',   label: 'Malların/işlərin... gəlir (Cəmi)' },
+  '1002': { beyCode: '200.1', label: 'Malların təqdim edilməsindən gəlir' },
+  // ...
+}
+```
+
+- **`beyCode`** — номер строки в PDF-декларации (`200`, `200.1`, `321`, `1`, `1.1` и т.д.)
+- **`label`** — название показателя на азербайджанском
+
+Вспомогательная функция: `mvInfo(kod)` — возвращает `{ beyCode, label }`, для неизвестных кодов возвращает `{ beyCode: '—', label: 'Göstərici X' }`.
+
+### XLSX-экспорт XML (XmlExporter)
+
+3 листа в одном файле:
+
+| Лист | Цвет вкладки | Колонки |
+|---|---|---|
+| `MV Göstəriciləri` | Синий | Bəy.kodu \| XML kodu \| Göstərici adı \| Məbləğ |
+| `Aktivlər (Əlavə 1)` | Зелёный | Bəy.kodu \| XML kodu \| Ad \| Dövrün əvvəlinə \| Daxil \| Təqdim \| Sonuna |
+| `Kapital & Öhdəliklər` | Янтарный | Bəy.kodu \| XML kodu \| Ad \| Əvvəl \| Daxil \| Təqdim \| Silinib \| Sonuna |
+
+Бəyannamə koды (beyCode) в XLSX выделены синим жирным — для удобной сверки с бумажной декларацией.
+
+---
+
+## XLS модуль (Sections 1–8) — Şəxsi Hesab
+
+### Форма входного файла
 
 Портал выгружает `.xls`, который на самом деле является HTML-файлом в кодировке `iso-8859-1`. Содержит несколько `<table>`:
 
 - **Налоговая таблица** — идентифицируется по заголовкам `Yazılış tarixi` + `Əməliyyat adı` + `Miqdar (Manat)`
 - **Сводная таблица** — последний `<table>` в документе, пары ключ-значение (период, дата печати, долг и т.д.)
 
-### Важно: разные форматы файлов с портала
-
-Некоторые компании имеют файлы с дополнительным столбцом `Miqdar (ABŞ$)` перед `Miqdar (Manat)`. Поэтому индекс столбца суммы определяется **динамически** через `findIndex`, а не захардкожен:
-
+**Разные форматы столбцов:**
 ```js
+// Динамический поиск — не хардкодить индекс!
 let amountIdx = headers.findIndex(h => h.includes('Miqdar') && h.includes('Manat'));
 if (amountIdx === -1) amountIdx = 4; // fallback
 ```
 
-Возможные варианты столбцов (0-indexed):
-- **Стандартный формат (8 столбцов):** `date[0] | opName[1] | opType[2] | col3[3] | amount[4] | qaliq[5] | artiq[6] | faiz[7]`
-- **С валютным столбцом (9 столбцов):** `date[0] | opName[1] | opType[2] | col3[3] | ABŞ$[4] | Manat[5] | qaliq[6] | artiq[7] | faiz[8]`
+`opType` принимает значения: `Hesablama` | `Azalma` | `Ödəniş` (игнорируется)
 
-`opType` принимает значения: `Hesablama` (начисление) | `Azalma` (уменьшение) | `Ödəniş` (оплата, игнорируется)
-
----
-
-## AnalysisData shape
+### AnalysisData shape
 
 ```js
 {
   companyName, voen, period, printDate, totalDebt,
-  taxes,          // TaxEntry[], отсортированы по TAX_ORDER, затем год/период
-  kybActive,      // taxes где kyb_status === 'active'
-  kybCancelled,   // taxes где kyb_status === 'cancelled'
-  sybActive,      // taxes где syb_status === 'active'
-  sybCancelled,   // taxes где syb_status === 'cancelled'
-  rawRows,        // все сырые строки из налоговой таблицы (для Sheet 2)
+  taxes,          // TaxEntry[], отсортированы по TAX_ORDER → год → период
+  kybActive, kybCancelled,   // фильтры по kyb_status
+  sybActive, sybCancelled,   // фильтры по syb_status
+  rawRows,        // все сырые строки (для Sheet 2 XLSX)
 }
 ```
 
-### Поля TaxEntry
+### TaxEntry поля
 
 ```js
 {
-  key,              // канонический ключ периода, напр. "ƏDV 2025/03", "MV - 2024", "HŞƏV - 2024"
-  hesablama,        // начисления клиента
-  azalma,           // уменьшения клиента
-  kyb_hesablama, kyb_azalma, kyb_net,   // суммы камеральной проверки
-  kyb_status,       // 'none' | 'active' | 'cancelled'
-  has_kyb, has_kybl,
-  syb_hesablama, syb_azalma, syb_net,   // суммы выездной проверки
-  syb_status,       // 'none' | 'active' | 'cancelled'
-  has_syb,
-  total_hesablama,  // hesablama + kyb_hesablama + syb_hesablama
-  total_azalma,     // azalma + kyb_azalma + syb_azalma
-  total_net,        // total_hesablama - total_azalma
-  decl_count,       // количество реально поданных деклараций (см. правила ниже)
-  client_net,       // hesablama - azalma (только клиентская часть, без проверок)
-  decl_count: 0,    // счётчик (не Set), накапливается в buildTaxMap
-  vahidDates: Set,  // только для VAHID MUZDLU — дедупликация (date|declType)
+  key,              // "ƏDV 2025/03", "MV - 2024", "HŞƏV - 2024"
+  hesablama, azalma,
+  kyb_hesablama, kyb_azalma, kyb_net, kyb_status,  // 'none'|'active'|'cancelled'
+  syb_hesablama, syb_azalma, syb_net, syb_status,
+  total_hesablama, total_azalma, total_net,
+  decl_count,       // реально поданные декларации (без /N строк, без CARİ(ARAYIŞ))
+  vahidDates,       // Set — только для VAHID MUZDLU, дедупликация по date|declType
 }
 ```
 
----
+### extractTaxKey — приоритеты
 
-## Логика парсера (Section 3)
-
-### 3.1 Определение KYB / SYB
-
-```js
-const isKyb  = opName.includes('KYB');
-const isKybl = opName.includes('KYBL');        // ləğv — всегда → kyb_azalma
-const isSyb  = opName.includes('SYB') && !isKyb;  // SYB только если KYB отсутствует
-```
-
-KYB (камеральная проверка):
-- `has_kyb = true` при любом вхождении KYB
-- KYBL всегда идёт в `kyb_azalma` независимо от `opType`
-- `kyb_status`: `active` если `kyb_net > 0`, `cancelled` если `kyb_net ≤ 0`, `none` если проверки нет
-
-SYB (выездная проверка) — аналогичная логика.
-
-### 3.2 extractTaxKey — приоритетный порядок
-
-Функция принимает `opName` и возвращает канонический ключ периода:
-
-| Приоритет | Паттерн входа | Ключ выхода |
+| # | Входной паттерн | Выходной ключ |
 |---|---|---|
-| 1 | `Ödəmə tapşırığı` / `Sərəncam` | `'Diger'` (пропускается) |
+| 1 | `Ödəmə tapşırığı` / `Sərəncam` | `'Diger'` (пропуск) |
 | 2 | `ƏDVQR YYYY/MM` | `'ƏDVQR 2024/09'` |
 | 3 | `ƏDV YYYY/MM` | `'ƏDV 2025/03'` |
 | 4 | `ÖMV YYYY N. Rüb` | `'ÖMV 2025 3. Rüb'` |
 | 5 | `VAHID MUZDLU YYYY N. Rüb` | `'VAHID MUZDLU 2025 4. Rüb'` |
-| 6 | `ƏV - N.Rüb YYYY` | `'HŞƏV - YYYY'` (квартальный аванс, объединяется с HŞƏV) |
+| 6 | `ƏV - N.Rüb YYYY` | `'HŞƏV - YYYY'` |
 | 7 | `HŞƏV YYYY` | `'HŞƏV - YYYY'` |
 | 8 | `MV...` (не ÖMV) | `'MV - YYYY'` |
-| 9 | Universal fallback | `TAX YYYY/MM` → `TAX YYYY/MM` |
-| 9 | Universal fallback | `TAX YYYY N. Rüb` → `TAX YYYY N. Rüb` |
-| 9 | Universal fallback | `TAX YYYY` → `TAX - YYYY` |
-| 10 | Всё остальное | `'Diger'` (пропускается) |
+| 9 | Универсальный fallback | по году/месяцу/кварталу |
+| 10 | Всё остальное | `'Diger'` (пропуск) |
 
-**Важно про MV:** В налоговой таблице MV встречается в двух форматах:
-- `MV - 4. Rüb 2024 - Cari hesablama (151.1)` — квартальный аванс (регулярные начисления)
-- `MV 2024 - DƏQİQLƏŞMİŞ(B)` — годовая декларация с уточнениями
+### KYB / SYB логика
 
-Оба формата попадают в один ключ `'MV - 2024'` через правило 8.
+```js
+const isKyb  = opName.includes('KYB');
+const isKybl = opName.includes('KYBL');          // ləğv → kyb_azalma
+const isSyb  = opName.includes('SYB') && !isKyb; // SYB только без KYB
+```
 
-### 3.3 Подсчёт деклараций (decl_count)
+### decl_count — подсчёт деклараций
 
-**Паттерн:** `/CARİ\(B\)|DƏQİQLƏŞMİŞ\(B\)|DƏQİQLƏŞDİRİLMİŞ\(B\)/`
+Паттерн: `/CARİ\(B\)|DƏQİQLƏŞMİŞ\(B\)|DƏQİQLƏŞDİRİLMİŞ\(B\)/`
 
 Исключения:
-- `CARİ(ARAYIŞ)` — не считается (это справка, не декларация)
-- `opType === 'Ödəniş'` — не считается
-- Строки с суффиксом `/ N` (напр. `MV 2024 - DƏQİQLƏŞMİŞ(B) / 1`) — **не считаются**
+- `CARİ(ARAYIŞ)` — не декларация
+- `/N`-строки (`DƏQİQLƏŞMİŞ(B) / 1` и т.д.) — автогенерация системы, не считаются
+- `VAHID MUZDLU` — дедупликация через `vahidDates` Set (3 строки = 1 декларация)
 
-**Ключевое правило про `/N` суффиксы:**  
-Когда компания подаёт `DƏQİQLƏŞMİŞ(B)`, система налоговой автоматически добавляет строки `/ 1`, `/ 2`, `/ 3`, `/ 4` — это корректировки по каждому квартальному авансу (151.1, 151.2 и т.д.). Эти строки не являются декларациями клиента — это автогенерация системы. Поэтому:
-
-```js
-const isSlashRow = /\/\s*\d+\s*$/.test(opName);
-if (DECL_PATTERN.test(opName) && opType !== 'Ödəniş' && !isSlashRow) {
-  entry.decl_count++;  // только slash-free строки = реальные декларации
-}
-```
-
-**Исключение — VAHID MUZDLU:**  
-Портал создаёт **3 строки** на одну квартальную декларацию (по одной на каждый месяц квартала). Дедупликация через `vahidDates.add(date|declType)` — Set хранит уникальные пары `(yazılış tarixi, тип декларации)`, каждый квартал считается как 1.
-
-### 3.4 Сортировка
-
-```js
-TAX_ORDER = ['MV', 'ƏDVQR', 'ƏDV', 'ÖMV', 'HŞƏV', 'VAHID MUZDLU']
-// Вторичная сортировка: год ASC, затем месяц/квартал ASC
-// Неизвестные типы налогов → в конец, сортируются алфавитно
-```
-
----
-
-## UI (Section 4)
-
-### Основная таблица — 14 столбцов
-
-Колонки сгруппированы по **источнику**, а не по типу операции:
+### Таблица UI — 14 столбцов
 
 ```
 Vergi/Dövr | Bəyannamə | Bəy[Hes|Az|Net] | KYB[Hes|Az|Net|Status] | SYB[Hes|Az|Net|Status] | Cəmi Qalıq
 ```
 
-- **Bəyannamə üzrə** (синий) — что клиент сам начислил/уменьшил/итог
-- **KYB (Kameral)** (янтарный) — начисления/уменьшения камеральной проверки + статус-бейдж
-- **SYB (Səyyar)** (фиолетовый) — начисления/уменьшения выездной проверки + статус-бейдж
-- **Cəmi Qalıq** — итоговый остаток (все источники)
+### XLSX-экспорт XLS (XlsxExport) — 2 листа
 
-Статус-бейдж в строке: `⚠ сумма` (активный) / `✓ Ləğv` (ləğv edilib) / `—` (нет проверки).  
-Отдельные разделы "Ləğv edilmiş KYB/SYB" **убраны** — вся информация видна в строке таблицы.
-
-Шапка таблицы двухстрочная, обе строки закреплены при скролле (`position: sticky`, первая на `top:0`, вторая на `top:31px`).
-
-### Alert-блоки
-
-- Жёлтый `⚠️` — есть активный KYB (kyb_net > 0)
-- Фиолетовый `🔍` — есть активный SYB (syb_net > 0)
-
-### Summary chips (6 штук)
-
-Cəmi borc | KYB sayı | KYB məbləği | SYB sayı | SYB məbləği | Vergi növləri
+- **Sheet 1 Analiz:** 14 колонок, цветовые группы (синий/янтарный/фиолетовый), KYB-строки с жёлтым фоном
+- **Sheet 2 Orijinal Statement:** все rawRows, дата → Excel Date, сумма → числовой формат
 
 ---
 
-## XLSX Export (Section 5)
-
-Два листа в одном файле. **Порядок важен:** листы добавляются до `wb.xlsx.writeBuffer()`.
-
-### Sheet 1: Analiz
-
-- Строки 1-2: шапка компании
-- Строка 3: KYB-предупреждение (если есть активные)
-- Строка 4: SYB-предупреждение (если есть активные)
-- Строка 5: отступ
-- Строки 6-7: двойной заголовок (группа + подзаголовок), заморожены (`ySplit: 7`)
-- **14 колонок данных:** Tax | Decl | Bəy[Hes, Az, Net] | KYB[Hes, Az, Net, Status] | SYB[Hes, Az, Net, Status] | Cəmi Qalıq
-- Цветовые группы: синий = Bəyannamə, янтарный = KYB, фиолетовый = SYB
-- Строки с `kyb_hesablama > 0` → светло-жёлтый фон; активный KYB → красный фон в колонке статуса; активный SYB → фиолетовый фон
-- KYB Net: зелёный (≤ 0, т.е. погашен/ləğv), красный (> 0, активный)
-- Итоговый блок после данных: долг, KYB sayı/məbləği, SYB sayı/məbləği
-
-### Sheet 2: Orijinal Statement
-
-- Все `rawRows` из парсера в оригинальном виде
-- Столбец даты → тип Excel Date (`DD.MM.YYYY`)
-- Столбец суммы → числовой с `NUM_FMT`
-- Ширина столбца opName — автоматически, не более 55 символов
-
----
-
-## Решённые проблемы / известные нюансы
+## Решённые проблемы
 
 | Проблема | Решение |
 |---|---|
-| Файлы с `Miqdar (ABŞ$)` столбцом (9 столбцов вместо 8) | Динамический `findIndex` для поиска `Miqdar (Manat)` |
-| `/N`-строки (авто-корректировки авансов) считались как декларации | Проверка `isSlashRow = /\/\s*\d+\s*$/.test(opName)`, такие строки не считаются |
-| `ƏV` квартальные авансы HŞƏV | Объединяются в ключ `HŞƏV - YYYY` |
-| KYBL (ləğv) — всегда уменьшение KYB | Явная проверка до ветки opType |
-| VAHID MUZDLU: 3 строки на одну декларацию | `vahidDates` Set с ключом `date|declType` |
-| Портал иногда выгружает frameset-формат | Пользователь должен использовать "Saxla" для стандартного HTML |
-| Формат суммы `8.415,00` (AZ/DE локаль) | `s.replace(/\./g,'').replace(',','.')` |
-| XSS в названии компании | `esc()` оборачивает все данные пользователя в innerHTML |
-| XLSX был тёмным, непригодным для печати | Палитра `C` полностью переработана на светлую тему (белый/светло-серый фон, тёмный текст) |
-| Строки с KYB начислениями не выделялись | Светло-жёлтый фон (`FFFBEB`/`FEFCE8`) для строк где `kyb_hesablama > 0` |
+| Файлы с `Miqdar (ABŞ$)` (9 столбцов) | Динамический `findIndex` |
+| `/N`-строки считались как декларации | `isSlashRow = /\/\s*\d+\s*$/.test(opName)` |
+| `ƏV` авансы HŞƏV объединяются | Ключ `HŞƏV - YYYY` |
+| KYBL всегда в kyb_azalma | Явная проверка до ветки opType |
+| VAHID MUZDLU: 3 строки = 1 декл. | `vahidDates` Set |
+| XSD портала недоступен | Маппинг MV_LABELS по совпадению сумм XML↔PDF |
+| beyCode для Əlavə 1 неточны | Помечены `*` или `a/b` суффиксами, требуют проверки по реальному XSD |
 
 ---
 
-## CSS переменные (краткий справочник)
+## CSS переменные
 
 ```css
 --bg / --bg2 / --bg3        /* тёмные фоны */
 --border                    /* #2a3347 */
 --accent / --accent2        /* синий */
 --green / --red / --yellow / --purple   /* статусные цвета */
---green-bg / --red-bg / --yellow-bg / --purple-bg  /* тонированные фоны */
 --mono / --sans             /* IBM Plex Mono / IBM Plex Sans */
 ```
 
 ---
 
-## Как продолжить работу в чате
+## Как работать с Claude
 
-1. Вставь этот README в начало разговора
-2. Также загрузи актуальный `index.html` в проект
-3. Ссылайся на номера секций: "Section 3 парсер", "Section 5 Sheet 2" и т.д.
-4. Файл ~1200 строк — просите Claude редактировать конкретные секции, а не переписывать всё
-5. **Язык общения: русский**
-
-### Типичный воркфлоу изменения
+### ⚠️ Обязательный первый шаг
 
 ```
-1. Описать проблему / желаемое поведение
-2. Claude читает нужную секцию через view tool
-3. Claude делает точечный str_replace
-4. Проверка через python-скрипт на реальном .xls файле (если нужно)
-5. Файл копируется в /mnt/user-data/outputs/ → скачиваешь → загружаешь на GitHub
+Перед любой работой с кодом:
+1. Сделай web_fetch https://zaurww.github.io/shv-analiz/
+2. Работай с этой версией — она актуальная
+3. Не используй файлы из прошлых разговоров
 ```
+
+### Воркфлоу изменений
+
+```
+1. Claude делает fetch https://zaurww.github.io/shv-analiz/
+2. Описываешь проблему / желаемое поведение
+3. Claude делает точечный str_replace в нужной секции
+4. Файл → /mnt/user-data/outputs/index.html → скачиваешь → заливаешь на GitHub
+```
+
+### Ссылки на секции
+
+- "Section 3 парсер" — логика KYB/SYB, extractTaxKey, decl_count
+- "Section 5 XLSX" — экспорт XLS-анализа
+- "Section 10 XML" — MV_LABELS, XmlParser, XmlRenderer, XmlExporter
+- "Tab CSS" — `.tab-btn` стили в `<style>`
