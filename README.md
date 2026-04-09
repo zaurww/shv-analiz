@@ -1,267 +1,151 @@
 # shv-analiz
 
-Анализатор выписки личного налогового счёта (Şəxsi Hesab Vərəqəsi) + анализатор XML декларации по налогу на прибыль (Mənfəət Vergisi).
+Tax analysis tool for Azerbaijan — personal tax account statement analyzer + profit tax declaration XML analyzer.
 
-**Live (актуальная версия всегда здесь):** https://zaurww.github.io/shv-analiz/  
+**Live (always the latest version):** https://zaurww.github.io/shv-analiz/  
 **Repo:** https://github.com/zaurww/shv-analiz (Public)  
-**Stack:** Один HTML-файл (`index.html`), без бэкенда, без сборки. ExcelJS 4.3.0 через CDN.  
-**Deploy:** Загрузи `index.html` на GitHub → commit → сразу в эфире через Pages.
+**Stack:** Single HTML file (`index.html`), no backend, no build step. ExcelJS 4.3.0 via CDN.  
+**Deploy:** Upload `index.html` to GitHub → commit → instantly live via Pages.
 
-> **⚠️ ВАЖНО ДЛЯ CLAUDE:** Актуальный код всегда на https://zaurww.github.io/shv-analiz/  
-> Перед любыми изменениями **сначала fetch этот URL**, чтобы видеть последнюю версию.  
-> Не опирайся на файлы из прошлых разговоров — они могут быть устаревшими.
+> **⚠️ IMPORTANT FOR CLAUDE:** Authoritative source is always https://zaurww.github.io/shv-analiz/  
+> Before any changes: `web_fetch` that URL first. If user uploaded `index.html` in conversation — that file takes priority.  
+> Never rely on files from previous conversations.
 
-> **Язык чата:** По умолчанию общаемся на **русском**. Интерфейс и комментарии в коде — на азербайджанском/английском.
-
----
-
-## Что делает
-
-Два независимых модуля в одном файле, переключаются вкладками в шапке:
-
-### Вкладка 1 — 📋 Şəxsi Hesab (личный счёт)
-Пользователь перетаскивает `.xls`-файл, скачанный с налогового портала (на самом деле HTML-таблица в кодировке ISO-8859-1) → приложение парсит в браузере → показывает таблицу анализа с KYB/SYB → экспортирует в XLSX.
-
-### Вкладка 2 — 📄 MV Bəyannaməsi XML (декларация по налогу на прибыль)
-Пользователь перетаскивает `.xml`-файл, скачанный с портала new.e-taxes.gov.az (кнопка "XML endir" в разделе Bəyannamələr) → приложение парсит → показывает все показатели с кодами → экспортирует в XLSX (3 листа).
+> **Chat language:** Russian by default. UI and code comments in Azerbaijani/English.
 
 ---
 
-## Структура файла
+## Two Modules
 
-Весь код в `index.html` (~1780 строк), разбит на 10 секций:
+### Tab 1 — Şəxsi Hesab (XLS)
+`.xls` file from tax portal (ISO-8859-1 HTML table) → parse → analysis table with KYB/SYB → XLSX export.
 
-| Секция | Модуль | Ответственность |
-|---|---|---|
-| 1 | Constants | `TAX_ORDER`, `DECL_PATTERN` |
-| 2 | File I/O | Drag & drop, FileReader (`iso-8859-1`) — для XLS |
-| 3 | `Parser` IIFE | Сырой HTML → объект `AnalysisData` |
-| 4 | `Renderer` IIFE | `AnalysisData` → DOM (innerHTML) |
-| 5 | `XlsxExport` IIFE | `AnalysisData` → ExcelJS workbook → скачивание |
-| 6 | Format helpers | `fmt()`, `fmtRaw()`, `esc()` — чистые функции |
-| 7 | UI helpers | `ui.showSpinner`, `ui.showError` |
-| 8 | Bootstrap | `initDropZone()` |
-| 9 | Tab switch | `switchTab('shv'/'xml')` — переключение вкладок |
-| 10 | XML Module | `MV_LABELS`, `XmlParser`, `XmlRenderer`, `XmlExporter` |
-
-Глобальное состояние:
-- `window._analysisData` — XLS-анализ (Section 3), читается при XLSX-экспорте
-- `window._xmlData` — XML-анализ (Section 10), читается при XLSX-экспорте
+### Tab 2 — MV Bəyannaməsi XML
+`.xml` from `new.e-taxes.gov.az` ("XML endir") → parse → all indicators with PDF line codes → XLSX (3 sheets).
 
 ---
 
-## XML модуль (Section 10) — MV Bəyannaməsi
+## File Structure (~1790 lines, 10 sections)
 
-### Формат входного файла
+| Section | Module |
+|---|---|
+| 1 | Constants: `TAX_ORDER`, `DECL_PATTERN` |
+| 2 | File I/O: drag & drop, FileReader iso-8859-1 |
+| 3 | `Parser` IIFE: raw HTML → AnalysisData |
+| 4 | `Renderer` IIFE: AnalysisData → DOM |
+| 5 | `XlsxExport` IIFE: AnalysisData → XLSX |
+| 6 | Format helpers: `fmt()`, `fmtRaw()`, `esc()` |
+| 7 | UI helpers: `ui.showSpinner`, `ui.showError` |
+| 8 | Bootstrap: `initDropZone()` |
+| 9 | Tab switch: `switchTab('shv'/'xml')` |
+| 10 | XML Module: `MV_LABELS`, `XmlParser`, `XmlRenderer`, `XmlExporter` |
 
-XML-файл скачивается с нового портала `new.e-taxes.gov.az` → Bəyannamələr → "..." → "XML endir".  
-Тип декларации: `MENFEET_1` (Mənfəət Vergisi — налог на прибыль).  
-Кодировка: UTF-8. Корневой тег: `<beyanname kodVer="MENFEET_1">`.
+---
 
-**⚠️ XSD недоступен:** XSD-файл (`MENFEET_1.xsd`) не отдаётся порталом публично.  
-Маппинг кодов выполнен вручную сопоставлением XML-сумм с PDF-декларацией (скриншоты PDF предоставлены пользователем, сверка 2025-04-09).
+## XML Module — MV_LABELS Code Mapping
 
-### Секции XML
+### THE GOLDEN RULE
+**The PDF declaration is the single source of truth.**  
+The section a line appears in within the PDF determines which `codes:[]` array it belongs to — regardless of which XML tag it came from.
 
-| XML-секция | Тип данных | Поля |
-|---|---|---|
-| `vergiHesab` | Простые строки | `<gosterici>` + `<mebleg>` |
-| `bagliHarc` | Простые строки | `<gosterici>` + `<mebleg>` |
-| `hesabatDovruVergiHesab1` | Простые строки | `<gosterici>` + `<mebleg>` |
-| `aktivler` | Таблица движения | `evveline / dahilOlunan / takdimEdilen / sonuna` |
-| `kapitalEhtiyatlar` | Таблица движения | `evveline / dahilOlunan / takdimEdilen / silinen / sonuna` |
+> Never place a code based on its XML section tag. Always follow the PDF.
 
-В `allData` ключи:
-- Простые: `'1001'`, `'2001'` и т.д. → `{ mebleg }`
-- Активлер: `'A_4017'`, `'A_4015'` и т.д. → `{ evvel, dahil, takdim, son }`
-- Капитал: `'K_4023'`, `'K_6001'` и т.д. → `{ evvel, dahil, takdim, silen, son }`
+### How to Map a New Code
 
-### MV_LABELS — маппинг кодов
-
-Каждый XML-код имеет два атрибута:
-```js
-MV_LABELS = {
-  '1001': { beyCode: '200',   label: 'Malların/işlərin... gəlir (Cəmi)' },
-  '1034': { beyCode: '212',   label: 'Faizlər (gəlir)' },  // не 310!
-  '2001': { beyCode: '221',   label: 'Malların təqdim edilməsi... xərclər' },  // не балансовая статья!
-  // ...
-}
+```
+1. Find XML <gosterici> code and its <mebleg> value
+2. Find the same amount in the PDF declaration
+3. Note the PDF line number → beyCode
+4. Note the PDF section → determines which section array
+5. Add to MV_LABELS AND the correct section in both:
+   - const sections = [...] in XmlRenderer.render()
+   - const simpleSecs = [...] in XmlExporter.download()
 ```
 
-- **`beyCode`** — номер строки в PDF-декларации
-- **`label`** — название показателя на азербайджанском
+### PDF Structure → Code Sections
 
-**⚠️ Критические исправления (сверено по PDF 2025-04-09):**
-
-| XML код | Было (неверно) | Стало (верно) |
+| PDF lines | Section | Verified XML codes |
 |---|---|---|
-| `1021` | `300` — Maya dəyəri | `206` — Əvəzsiz əsasla təqdim edilmiş aktivlər |
-| `1034` | `310` — İnzibati xərclər | `212` — Faizlər (gəlir) |
-| `1006` | `315` — Digər xərclər | `212.2` — Digər faiz gəlirləri |
-| `1041` | `320` — Cəmi xərclər | `218` — ÜMUMİ GƏLİRLƏR |
-| `1042` | `321` — Vergiyə cəlb olunan mənfəət | `219` — Ümumi gəlirdən çıxılamalar |
-| `1045` | `323` | `219.3` — Xarici valyuta məzənnə fərqi |
-| `1056` | `330` | `220` — Çıxılamalardan sonra ÜMUMİ GƏLİR |
-| `3001` | `39` | `237` — Vergitutma məqsədləri üçün mənfəət |
-| `2001`–`2073` | Balans aktivləri | `221`–`236` Xərc detalları |
+| 200–220 | **Gəlirlər** | `1001,1002,1012,1013,1016,1021,1034,1006,1041,1042,1045,1056` |
+| 221–236 | **Xərclər** (all bagliHarc codes) | `2001,2002,2003,2004,2005,2007,2008,1200,2009,2011,2012,2014,2016,2018,2019,2020,2021,2022,2023,2027,2031,2033,2034,2039,2140,2040,2043,2049,2050,2052,2053,2057,2062,2063,2064,2066,2071,2073` |
+| 237+ | **Verginin hesablanması** | `3001,3002,3003,3004,1022,1023,1102,1106,1031,1076` |
+| Əlavə 1 | Asset movement | `A_4017, A_4047, A_4048 ...` |
+| Əlavə 1 | Capital/liabilities | `K_4023, K_5001, K_4024 ...` |
 
-**Важно про `bagliHarc` секцию:** XML-коды `2001`–`2073` — это НЕ балансовые статьи, а детализация расходов (sat.221–236 в PDF). `bagliHarc` буквально означает "сопутствующие расходы".
+### Critical Corrections — DO NOT REVERT (verified 2025-04-09)
 
-Вспомогательная функция: `mvInfo(kod)` — возвращает `{ beyCode, label }`, для неизвестных кодов возвращает `{ beyCode: '—', label: 'Göstərici X' }`.
+| XML code | Wrong old beyCode | Correct beyCode | PDF section |
+|---|---|---|---|
+| `1021` | `300` | `206` | Gəlirlər |
+| `1034` | `310` | `212` | Gəlirlər |
+| `1006` | `315` | `212.2` | Gəlirlər |
+| `1041` | `320` | `218` ÜMUMİ GƏLİRLƏR | Gəlirlər |
+| `1042` | `321` | `219` çıxılamalar | Gəlirlər |
+| `1045` | `323` | `219.3` | Gəlirlər |
+| `1056` | `330` | `220` | Gəlirlər |
+| `3001` | `39` | `237` | Verginin hesablanması |
+| `2001–2073` | balance sheet | `221–236` expenses | Xərclər |
 
-### XLSX-экспорт XML (XmlExporter)
+### Key Insight: bagliHarc ≠ Balance Sheet
+`bagliHarc` codes `2001–2073` are **expense details (sat.221–236)**, not balance sheet items.
 
-3 листа в одном файле:
+### Summary Chips → XML codes
 
-| Лист | Цвет вкладки | Колонки |
+| Chip | XML code | PDF line |
 |---|---|---|
-| `MV Göstəriciləri` | Синий | Bəy.kodu \| XML kodu \| Göstərici adı \| Məbləğ |
-| `Aktivlər (Əlavə 1)` | Зелёный | Bəy.kodu \| XML kodu \| Ad \| Dövrün əvvəlinə \| Daxil \| Təqdim \| Sonuna |
-| `Kapital & Öhdəliklər` | Янтарный | Bəy.kodu \| XML kodu \| Ad \| Əvvəl \| Daxil \| Təqdim \| Silinib \| Sonuna |
-
-Бəyannamə koды (beyCode) в XLSX выделены синим жирным — для удобной сверки с бумажной декларацией.
+| Ümumi gəlir | `1041` | sat.218 |
+| Cəmi xərclər | `2071` | sat.234 |
+| Vergitutma mənfəəti | `3001` | sat.237 |
+| Büdcəyə | `budce` (root field) | sat.243 |
+| Ümidsiz borc | `umidsizBorc` (root field) | Əlavə 3 |
 
 ---
 
-## XLS модуль (Sections 1–8) — Şəxsi Hesab
+## XLS Module Key Details
 
-### Форма входного файла
-
-Портал выгружает `.xls`, который на самом деле является HTML-файлом в кодировке `iso-8859-1`. Содержит несколько `<table>`:
-
-- **Налоговая таблица** — идентифицируется по заголовкам `Yazılış tarixi` + `Əməliyyat adı` + `Miqdar (Manat)`
-- **Сводная таблица** — последний `<table>` в документе, пары ключ-значение (период, дата печати, долг и т.д.)
-
-**Разные форматы столбцов:**
+### Column Detection (always dynamic)
 ```js
-// Динамический поиск — не хардкодить индекс!
 let amountIdx = headers.findIndex(h => h.includes('Miqdar') && h.includes('Manat'));
-if (amountIdx === -1) amountIdx = 4; // fallback
+if (amountIdx === -1) amountIdx = 4;
 ```
 
-`opType` принимает значения: `Hesablama` | `Azalma` | `Ödəniş` (игнорируется)
-
-### AnalysisData shape
-
-```js
-{
-  companyName, voen, period, printDate, totalDebt,
-  taxes,          // TaxEntry[], отсортированы по TAX_ORDER → год → период
-  kybActive, kybCancelled,   // фильтры по kyb_status
-  sybActive, sybCancelled,   // фильтры по syb_status
-  rawRows,        // все сырые строки (для Sheet 2 XLSX)
-}
-```
-
-### TaxEntry поля
-
-```js
-{
-  key,              // "ƏDV 2025/03", "MV - 2024", "HŞƏV - 2024"
-  hesablama, azalma,
-  kyb_hesablama, kyb_azalma, kyb_net, kyb_status,  // 'none'|'active'|'cancelled'
-  syb_hesablama, syb_azalma, syb_net, syb_status,
-  total_hesablama, total_azalma, total_net,
-  decl_count,       // реально поданные декларации (без /N строк, без CARİ(ARAYIŞ))
-  vahidDates,       // Set — только для VAHID MUZDLU, дедупликация по date|declType
-}
-```
-
-### extractTaxKey — приоритеты
-
-| # | Входной паттерн | Выходной ключ |
-|---|---|---|
-| 1 | `Ödəmə tapşırığı` / `Sərəncam` | `'Diger'` (пропуск) |
-| 2 | `ƏDVQR YYYY/MM` | `'ƏDVQR 2024/09'` |
-| 3 | `ƏDV YYYY/MM` | `'ƏDV 2025/03'` |
-| 4 | `ÖMV YYYY N. Rüb` | `'ÖMV 2025 3. Rüb'` |
-| 5 | `VAHID MUZDLU YYYY N. Rüb` | `'VAHID MUZDLU 2025 4. Rüb'` |
-| 6 | `ƏV - N.Rüb YYYY` | `'HŞƏV - YYYY'` |
-| 7 | `HŞƏV YYYY` | `'HŞƏV - YYYY'` |
-| 8 | `MV...` (не ÖMV) | `'MV - YYYY'` |
-| 9 | Универсальный fallback | по году/месяцу/кварталу |
-| 10 | Всё остальное | `'Diger'` (пропуск) |
-
-### KYB / SYB логика
-
+### KYB / SYB
 ```js
 const isKyb  = opName.includes('KYB');
-const isKybl = opName.includes('KYBL');          // ləğv → kyb_azalma
-const isSyb  = opName.includes('SYB') && !isKyb; // SYB только без KYB
+const isKybl = opName.includes('KYBL');  // → kyb_azalma
+const isSyb  = opName.includes('SYB') && !isKyb;
 ```
 
-### decl_count — подсчёт деклараций
+### decl_count
+Pattern: `/CARİ\(B\)|DƏQİQLƏŞMİŞ\(B\)|DƏQİQLƏŞDİRİLMİŞ\(B\)/`  
+Excluded: `CARİ(ARAYIŞ)`, `/N` rows (system auto-gen), VAHID MUZDLU deduped via `vahidDates` Set.
 
-Паттерн: `/CARİ\(B\)|DƏQİQLƏŞMİŞ\(B\)|DƏQİQLƏŞDİRİLMİŞ\(B\)/`
-
-Исключения:
-- `CARİ(ARAYIŞ)` — не декларация
-- `/N`-строки (`DƏQİQLƏŞMİŞ(B) / 1` и т.д.) — автогенерация системы, не считаются
-- `VAHID MUZDLU` — дедупликация через `vahidDates` Set (3 строки = 1 декларация)
-
-### Таблица UI — 14 столбцов
-
-```
-Vergi/Dövr | Bəyannamə | Bəy[Hes|Az|Net] | KYB[Hes|Az|Net|Status] | SYB[Hes|Az|Net|Status] | Cəmi Qalıq
-```
-
-### XLSX-экспорт XLS (XlsxExport) — 2 листа
-
-- **Sheet 1 Analiz:** 14 колонок, цветовые группы (синий/янтарный/фиолетовый), KYB-строки с жёлтым фоном
-- **Sheet 2 Orijinal Statement:** все rawRows, дата → Excel Date, сумма → числовой формат
+### extractTaxKey Priority
+`Ödəmə tapşırığı/Sərəncam` → Diger | `ƏDVQR YYYY/MM` | `ƏDV YYYY/MM` | `ÖMV YYYY N.Rüb` | `VAHID MUZDLU YYYY N.Rüb` | `ƏV - N.Rüb YYYY` → HŞƏV | `HŞƏV YYYY` | `MV` (not ÖMV) | fallback | Diger
 
 ---
 
-## Решённые проблемы
+## Quick Section Reference
 
-| Проблема | Решение |
+| What to change | Location in file |
 |---|---|
-| Файлы с `Miqdar (ABŞ$)` (9 столбцов) | Динамический `findIndex` |
-| `/N`-строки считались как декларации | `isSlashRow = /\/\s*\d+\s*$/.test(opName)` |
-| `ƏV` авансы HŞƏV объединяются | Ключ `HŞƏV - YYYY` |
-| KYBL всегда в kyb_azalma | Явная проверка до ветки opType |
-| VAHID MUZDLU: 3 строки = 1 декл. | `vahidDates` Set |
-| XSD портала недоступен | Маппинг MV_LABELS по совпадению сумм XML↔PDF |
-| beyCode для `vergiHesab` неверны | Исправлено по PDF (2025-04-09): `1034`→`212`, `1041`→`218`, `2001`→`221` и др. |
-| `bagliHarc` — не балансовые статьи | Это xərc detalları (sat.221–236), исправлено в MV_LABELS |
+| XML code labels | `const MV_LABELS = {...}` in Section 10 |
+| XML display sections | `const sections = [...]` in `XmlRenderer.render()` |
+| XML XLSX sections | `const simpleSecs = [...]` in `XmlExporter.download()` |
+| KYB/SYB/parsing logic | Section 3 — Parser |
+| XLS XLSX export | Section 5 — XlsxExport |
+| Tab styles | `.tab-btn` in `<style>` |
 
 ---
 
-## CSS переменные
+## Known Issues & Resolutions
 
-```css
---bg / --bg2 / --bg3        /* тёмные фоны */
---border                    /* #2a3347 */
---accent / --accent2        /* синий */
---green / --red / --yellow / --purple   /* статусные цвета */
---mono / --sans             /* IBM Plex Mono / IBM Plex Sans */
-```
-
----
-
-## Как работать с Claude
-
-### ⚠️ Обязательный первый шаг
-
-```
-Перед любой работой с кодом:
-1. Сделай web_fetch https://zaurww.github.io/shv-analiz/
-2. Работай с этой версией — она актуальная
-3. Не используй файлы из прошлых разговоров
-```
-
-### Воркфлоу изменений
-
-```
-1. Claude делает fetch https://zaurww.github.io/shv-analiz/
-2. Описываешь проблему / желаемое поведение
-3. Claude делает точечный str_replace в нужной секции
-4. Файл → /mnt/user-data/outputs/index.html → скачиваешь → заливаешь на GitHub
-```
-
-### Ссылки на секции
-
-- "Section 3 парсер" — логика KYB/SYB, extractTaxKey, decl_count
-- "Section 5 XLSX" — экспорт XLS-анализа
-- "Section 10 XML" — MV_LABELS, XmlParser, XmlRenderer, XmlExporter
-- "Tab CSS" — `.tab-btn` стили в `<style>`
+| Issue | Resolution |
+|---|---|
+| Extra `Miqdar (ABŞ$)` column | Dynamic `findIndex` |
+| `/N` rows counted as declarations | `isSlashRow = /\/\s*\d+\s*$/.test(opName)` |
+| `ƏV` advances must merge into HŞƏV | Key `HŞƏV - YYYY` |
+| KYBL always → kyb_azalma | Explicit check before opType |
+| VAHID MUZDLU 3 rows = 1 decl | `vahidDates` Set |
+| `bagliHarc` confused with balance sheet | It's expenses (sat.221–236) |
+| `1034`, `1021` in wrong section | Fixed: both are revenue items |
