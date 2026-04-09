@@ -1283,18 +1283,18 @@ const MV_LABELS = {
   '1042': { beyCode:'219',      label:'Ümumi gəlirdən çıxılamalar' },
   '1045': { beyCode:'219.3',    label:'Xarici valyutaların manata nisbətən məzənnəsinin dəyişməsindən yaranan mənfi fərq' },
   '1056': { beyCode:'220',      label:'Çıxılamalardan sonra ÜMUMİ GƏLİR' },
-  // ── vergiHesab: Xərclər ──────────────────────────────────────
-  '1022': { beyCode:'228',      label:'Təmir xərcləri' },
-  '1023': { beyCode:'228.1',    label:'Binalar, tikililər və qurğular üzrə hesablanmış təmir xərcləri' },
-  '1102': { beyCode:'230',      label:'Sığorta üzrə xərclər' },
-  '1106': { beyCode:'231',      label:'Digər qiymətli kağızların, borc öhdəliklərinin... alınması ilə bağlı xərclər' },
-  '1031': { beyCode:'222',      label:'Borcа görə faizlər və onunla bağlı olan xərclər' },
-  '1076': { beyCode:'227.10',   label:'Yüksək texnologiyalar məhsulu olan hesablama texnikası üzrə hesablanmış amortizasiya' },
-  // ── hesabatDovruVergiHesab: Verginin hesablanması (sat.237–245)
-  '3001': { beyCode:'237',      label:'Vergitutma məqsədləri üçün mənfəət (sat.220 - sat.236)' },
-  '3002': { beyCode:'238',      label:'Mənfəət üzrə azadolmalar və güzəştlər' },
-  '3003': { beyCode:'239',      label:'Zərər (sat.236 - sat.220)' },
-  '3004': { beyCode:'240',      label:'Mənfəət hesabına kompensasiya edilən keçmiş illərin zərəri' },
+  // ── vergiHesab: digər xərclər (bagliHarc-da artıq var, burada sıfır olduqda göstərilmir)
+  '1022': { beyCode:'228',    label:'Təmir xərcləri' },
+  '1023': { beyCode:'228.1',  label:'Binalar, tikililər və qurğular üzrə hesablanmış təmir xərcləri' },
+  '1102': { beyCode:'230*',   label:'Sığorta üzrə xərclər (vergiHesab)' },
+  '1106': { beyCode:'231*',   label:'Digər qiymətli kağızların alınması ilə bağlı xərclər (vergiHesab)' },
+  '1031': { beyCode:'222*',   label:'Borcа görə faizlər (vergiHesab)' },
+  '1076': { beyCode:'227.10', label:'Yüksək texnologiyalar məhsulu olan hesablama texnikası üzrə hesablanmış amortizasiya' },
+  // ── hesabatDovruVergiHesab: Verginin hesablanması (sat.237–245) ─
+  '3001': { beyCode:'237',    label:'Vergitutma məqsədləri üçün mənfəət (sat.220 - sat.236)' },
+  '3002': { beyCode:'238',    label:'Mənfəət üzrə azadolmalar və güzəştlər (sətrin təsnifatı 5 №-li Əlavə ilə təqdim olunur)' },
+  '3003': { beyCode:'239',    label:'Zərər (sat.236 - sat.220)' },
+  '3004': { beyCode:'241',    label:'Mənfəət üzrə azadolma, güzəşt və keçmiş illərin zərəri çıxılmaqla vergiyə cəlb olunan mənfəət (sat.237-(sat.238+sat.240))' },
   // ── bagliHarc: Xərclər detalları (sat.221–236) ───────────────
   '2001': { beyCode:'221',      label:'Malların təqdim edilməsi, iş görülməsi və xidmət göstərilməsi üzrə xərclər' },
   '2002': { beyCode:'221.1',    label:'Əmək haqqı və ona bərabər tutulan ödəmələr' },
@@ -1328,7 +1328,7 @@ const MV_LABELS = {
   '2052': { beyCode:'230',      label:'Sığorta üzrə xərclər' },
   '2053': { beyCode:'230.1',    label:'Sığorta fəaliyyəti üzrə xərclər' },
   '2057': { beyCode:'230.2',    label:'Ödənilmiş sığorta haqqları' },
-  '2062': { beyCode:'231',      label:'Digər qiymətli kağızlar, borc öhdəlikləri alınması ilə bağlı xərclər' },
+  '2062': { beyCode:'231b',     label:'Digər qiymətli kağızlar, borc öhdəlikləri alınması ilə bağlı xərclər (2)' },
   '2063': { beyCode:'232',      label:'Digər xərclər' },
   '2064': { beyCode:'233',      label:'Gəlirdən çıxılan vergilər və yığımlar' },
   '2066': { beyCode:'233.2',    label:'Əmlak vergisi' },
@@ -1562,26 +1562,28 @@ const XmlRenderer = (() => {
     const el = document.getElementById('xml-results');
     el.style.display = 'block';
 
-    const gelir = data.allData['1041']?.mebleg || 0;  // sat.218 — ÜMUMİ GƏLİRLƏR
-    const xrc   = data.allData['2071']?.mebleg || 0;  // sat.234 — CƏMİ XƏRCLƏR
-    const mv    = data.allData['3001']?.mebleg || 0;  // sat.237 — Vergitutma mənfəəti
+    const gelir = data.allData['1041']?.mebleg || 0;  // sat.218 ÜMUMİ GƏLİRLƏR
+    const xrc   = data.allData['2071']?.mebleg || 0;  // sat.234 CƏMİ XƏRCLƏR
+    const mv    = data.allData['3001']?.mebleg || 0;  // sat.237 Vergitutma mənfəəti
 
     const aktivKeys = Object.keys(data.allData).filter(k => k.startsWith('A_')).sort();
     const kapKeys   = Object.keys(data.allData).filter(k => k.startsWith('K_')).sort();
 
     const sections = [
-      // PDF: sat.200–218 — Gəlirlər
-      { title:'💰 Gəlirlər (sat.200–218)',
-        codes:['1001','1002','1012','1013','1016','1021','1034','1006','1041','1042','1045','1056'] },
-      // PDF: sat.221–236 — Xərclər (bagliHarc bölməsi)
+      // PDF: sat.200–220 — Gəlirlər + çıxılamalar
+      { title:'💰 Gəlirlər (sat.200–220)',
+        codes:['1001','1002','1012','1013','1016','1021','1034','1006',
+               '1041','1042','1045','1056'] },
+      // PDF: sat.221–236 — Xərclər (bagliHarc)
       { title:'📉 Xərclər (sat.221–236)',
-        codes:['2001','2002','2003','2004','2005','2007','2008','1200','2009','2011','2012','2014',
-               '2016','2018','2019','2020','2021','2022','2023','2027','2031','2033','2034','2039',
-               '2140','2040','2043','2049','2050','2052','2053','2057','2062','2063','2064','2066',
-               '2071','2073'] },
-      // PDF: sat.237+ — Verginin hesablanması + digər vergiHesab kodları
+        codes:['2001','2002','2003','2004','2005','2007','2008','1200','2009',
+               '2011','2012','2014','2016','2018','2019','2020',
+               '2021','2022','2023','2027','2031','2033','2034',
+               '2039','2140','2040','2043','2049','2050','2052','2053','2057',
+               '2063','2064','2066','2071','2073'] },
+      // PDF: sat.237+ — Verginin hesablanması
       { title:'🧾 Verginin hesablanması (sat.237+)',
-        codes:['3001','3002','3003','3004','1022','1023','1102','1106','1031','1076'] },
+        codes:['3001','3002','3003','3004','1022','1023','1076'] },
     ];
 
     let html = `
@@ -1680,20 +1682,22 @@ const XmlExporter = (() => {
         c.alignment = i===3?aR():i<2?aC():aL(); c.border=brd();
       });
 
-      const KEY_CODES = new Set(['1001','1041','1056','3001','2071']);
+      const KEY_CODES = new Set(['1041','1056','2071','3001','3004']);
       const simpleSecs = [
-        // PDF: sat.200–218 — Gəlirlər
-        { title:'GƏLİRLƏR (sat.200–218)',
-          codes:['1001','1002','1012','1013','1016','1021','1034','1006','1041','1042','1045','1056'] },
+        // PDF: sat.200–220 — Gəlirlər + çıxılamalar
+        { title:'GƏLİRLƏR (sat.200–220)',
+          codes:['1001','1002','1012','1013','1016','1021','1034','1006',
+                 '1041','1042','1045','1056'] },
         // PDF: sat.221–236 — Xərclər (bagliHarc)
         { title:'XƏRCLƏR (sat.221–236)',
-          codes:['2001','2002','2003','2004','2005','2007','2008','1200','2009','2011','2012','2014',
-                 '2016','2018','2019','2020','2021','2022','2023','2027','2031','2033','2034','2039',
-                 '2140','2040','2043','2049','2050','2052','2053','2057','2062','2063','2064','2066',
-                 '2071','2073'] },
+          codes:['2001','2002','2003','2004','2005','2007','2008','1200','2009',
+                 '2011','2012','2014','2016','2018','2019','2020',
+                 '2021','2022','2023','2027','2031','2033','2034',
+                 '2039','2140','2040','2043','2049','2050','2052','2053','2057',
+                 '2063','2064','2066','2071','2073'] },
         // PDF: sat.237+ — Verginin hesablanması
         { title:'VERGİNİN HESABLANMASI (sat.237+)',
-          codes:['3001','3002','3003','3004','1022','1023','1102','1106','1031','1076'] },
+          codes:['3001','3002','3003','3004','1022','1023','1076'] },
       ];
       let ri = 6;
       for (const sec of simpleSecs) {
