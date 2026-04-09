@@ -59,7 +59,7 @@ XML-файл скачивается с нового портала `new.e-taxes.
 Кодировка: UTF-8. Корневой тег: `<beyanname kodVer="MENFEET_1">`.
 
 **⚠️ XSD недоступен:** XSD-файл (`MENFEET_1.xsd`) не отдаётся порталом публично.  
-Маппинг кодов выполнен вручную сопоставлением XML-сумм с PDF-декларацией.
+Маппинг кодов выполнен вручную сопоставлением XML-сумм с PDF-декларацией (скриншоты PDF предоставлены пользователем, сверка 2025-04-09).
 
 ### Секции XML
 
@@ -82,13 +82,30 @@ XML-файл скачивается с нового портала `new.e-taxes.
 ```js
 MV_LABELS = {
   '1001': { beyCode: '200',   label: 'Malların/işlərin... gəlir (Cəmi)' },
-  '1002': { beyCode: '200.1', label: 'Malların təqdim edilməsindən gəlir' },
+  '1034': { beyCode: '212',   label: 'Faizlər (gəlir)' },  // не 310!
+  '2001': { beyCode: '221',   label: 'Malların təqdim edilməsi... xərclər' },  // не балансовая статья!
   // ...
 }
 ```
 
-- **`beyCode`** — номер строки в PDF-декларации (`200`, `200.1`, `321`, `1`, `1.1` и т.д.)
+- **`beyCode`** — номер строки в PDF-декларации
 - **`label`** — название показателя на азербайджанском
+
+**⚠️ Критические исправления (сверено по PDF 2025-04-09):**
+
+| XML код | Было (неверно) | Стало (верно) |
+|---|---|---|
+| `1021` | `300` — Maya dəyəri | `206` — Əvəzsiz əsasla təqdim edilmiş aktivlər |
+| `1034` | `310` — İnzibati xərclər | `212` — Faizlər (gəlir) |
+| `1006` | `315` — Digər xərclər | `212.2` — Digər faiz gəlirləri |
+| `1041` | `320` — Cəmi xərclər | `218` — ÜMUMİ GƏLİRLƏR |
+| `1042` | `321` — Vergiyə cəlb olunan mənfəət | `219` — Ümumi gəlirdən çıxılamalar |
+| `1045` | `323` | `219.3` — Xarici valyuta məzənnə fərqi |
+| `1056` | `330` | `220` — Çıxılamalardan sonra ÜMUMİ GƏLİR |
+| `3001` | `39` | `237` — Vergitutma məqsədləri üçün mənfəət |
+| `2001`–`2073` | Balans aktivləri | `221`–`236` Xərc detalları |
+
+**Важно про `bagliHarc` секцию:** XML-коды `2001`–`2073` — это НЕ балансовые статьи, а детализация расходов (sat.221–236 в PDF). `bagliHarc` буквально означает "сопутствующие расходы".
 
 Вспомогательная функция: `mvInfo(kod)` — возвращает `{ beyCode, label }`, для неизвестных кодов возвращает `{ beyCode: '—', label: 'Göstərici X' }`.
 
@@ -205,7 +222,8 @@ Vergi/Dövr | Bəyannamə | Bəy[Hes|Az|Net] | KYB[Hes|Az|Net|Status] | SYB[Hes|
 | KYBL всегда в kyb_azalma | Явная проверка до ветки opType |
 | VAHID MUZDLU: 3 строки = 1 декл. | `vahidDates` Set |
 | XSD портала недоступен | Маппинг MV_LABELS по совпадению сумм XML↔PDF |
-| beyCode для Əlavə 1 неточны | Помечены `*` или `a/b` суффиксами, требуют проверки по реальному XSD |
+| beyCode для `vergiHesab` неверны | Исправлено по PDF (2025-04-09): `1034`→`212`, `1041`→`218`, `2001`→`221` и др. |
+| `bagliHarc` — не балансовые статьи | Это xərc detalları (sat.221–236), исправлено в MV_LABELS |
 
 ---
 
