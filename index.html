@@ -1562,20 +1562,26 @@ const XmlRenderer = (() => {
     const el = document.getElementById('xml-results');
     el.style.display = 'block';
 
-    const gelir = data.allData['1001']?.mebleg || 0;
-    const xrc   = data.allData['1041']?.mebleg || 0;
-    const mv    = data.allData['1042']?.mebleg || 0;
+    const gelir = data.allData['1041']?.mebleg || 0;  // sat.218 — ÜMUMİ GƏLİRLƏR
+    const xrc   = data.allData['2071']?.mebleg || 0;  // sat.234 — CƏMİ XƏRCLƏR
+    const mv    = data.allData['3001']?.mebleg || 0;  // sat.237 — Vergitutma mənfəəti
 
     const aktivKeys = Object.keys(data.allData).filter(k => k.startsWith('A_')).sort();
     const kapKeys   = Object.keys(data.allData).filter(k => k.startsWith('K_')).sort();
 
     const sections = [
-      { title:'💰 Gəlirlər',                      codes:['1001','1002','1012','1013','1016'] },
-      { title:'📉 Xərclər',                        codes:['1021','1022','1023','1102','1106','1031','1034','1006','1041','1042','1045','1056','1076'] },
-      { title:'🧾 Vergi hesabı (hesabat dövrü)',   codes:['3001','3002','3003','3004'] },
-      { title:'🏦 Balans — Aktivlər',              codes:['2001','2002','2003','2004','2005','2007','2008','1200','2009','2011','2012','2014','2016','2018','2019'] },
-      { title:'📋 Balans — Öhdəliklər & Kapital',  codes:['2020','2021','2022','2023','2027','2031','2033','2034','2039','2140','2040','2043','2049','2050','2052','2053','2057','2062'] },
-      { title:'🔄 Gəlir/Xərc dövriyyəsi',         codes:['2063','2064','2066','2071','2073'] },
+      // PDF: sat.200–218 — Gəlirlər
+      { title:'💰 Gəlirlər (sat.200–218)',
+        codes:['1001','1002','1012','1013','1016','1021','1034','1006','1041','1042','1045','1056'] },
+      // PDF: sat.221–236 — Xərclər (bagliHarc bölməsi)
+      { title:'📉 Xərclər (sat.221–236)',
+        codes:['2001','2002','2003','2004','2005','2007','2008','1200','2009','2011','2012','2014',
+               '2016','2018','2019','2020','2021','2022','2023','2027','2031','2033','2034','2039',
+               '2140','2040','2043','2049','2050','2052','2053','2057','2062','2063','2064','2066',
+               '2071','2073'] },
+      // PDF: sat.237+ — Verginin hesablanması + digər vergiHesab kodları
+      { title:'🧾 Verginin hesablanması (sat.237+)',
+        codes:['3001','3002','3003','3004','1022','1023','1102','1106','1031','1076'] },
     ];
 
     let html = `
@@ -1590,11 +1596,11 @@ const XmlRenderer = (() => {
         </div>
       </div>
       <div class="summary-row">
-        <div class="chip"><div class="chip-label">Büdcəyə ödənilməli</div><div class="chip-value ${data.budce>0?'danger':'ok'}">${data.budce.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼</div></div>
-        <div class="chip"><div class="chip-label">Cəmi gəlir</div><div class="chip-value ok">${gelir.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼</div></div>
-        <div class="chip"><div class="chip-label">Cəmi xərclər</div><div class="chip-value">${xrc.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼</div></div>
-        <div class="chip"><div class="chip-label">Vergiyə cəlb olunan mənfəət</div><div class="chip-value ${mv>0?'ok':'danger'}">${mv.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼</div></div>
-        <div class="chip"><div class="chip-label">Ümidsiz borc</div><div class="chip-value ${data.umidsizBorc>0?'danger':'ok'}">${data.umidsizBorc.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼</div></div>
+        <div class="chip"><div class="chip-label">Büdcəyə ödənilməli (sat.243)</div><div class="chip-value ${data.budce>0?'danger':'ok'}">${data.budce.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼</div></div>
+        <div class="chip"><div class="chip-label">Ümumi gəlir (sat.218)</div><div class="chip-value ok">${gelir.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼</div></div>
+        <div class="chip"><div class="chip-label">Cəmi xərclər (sat.234)</div><div class="chip-value">${xrc.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼</div></div>
+        <div class="chip"><div class="chip-label">Vergitutma mənfəəti (sat.237)</div><div class="chip-value ${mv>0?'ok':'danger'}">${mv.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼</div></div>
+        <div class="chip"><div class="chip-label">Ümidsiz borc (Əlavə 3)</div><div class="chip-value ${data.umidsizBorc>0?'danger':'ok'}">${data.umidsizBorc.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼</div></div>
       </div>`;
 
     for (const sec of sections) {
@@ -1655,12 +1661,12 @@ const XmlExporter = (() => {
       });
       ws1.getRow(2).height = 14;
 
-      const gelir = data.allData['1001']?.mebleg || 0;
-      const xrc   = data.allData['1041']?.mebleg || 0;
-      const mv    = data.allData['1042']?.mebleg || 0;
+      const gelir = data.allData['1041']?.mebleg || 0;  // sat.218
+      const xrc   = data.allData['2071']?.mebleg || 0;  // sat.234
+      const mv    = data.allData['3001']?.mebleg || 0;  // sat.237
       ws1.mergeCells('A3:D3');
       Object.assign(ws1.getRow(3).getCell(1), {
-        value:`Gəlir: ${gelir.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼   |   Xərclər: ${xrc.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼   |   Mənfəət: ${mv.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼   |   Büdcəyə: ${data.budce.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼`,
+        value:`Ümumi gəlir (218): ${gelir.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼   |   Cəmi xərclər (234): ${xrc.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼   |   Vergitutma mənfəəti (237): ${mv.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼   |   Büdcəyə (243): ${data.budce.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼`,
         font:fn(data.budce>0?'B45309':'065F46',true,10), fill:fl(data.budce>0?'FEF3C7':'D1FAE5'), alignment:aL(),
       });
       ws1.getRow(3).height = 18;
@@ -1674,14 +1680,20 @@ const XmlExporter = (() => {
         c.alignment = i===3?aR():i<2?aC():aL(); c.border=brd();
       });
 
-      const KEY_CODES = new Set(['1001','1041','1042','1056','3003']);
+      const KEY_CODES = new Set(['1001','1041','1056','3001','2071']);
       const simpleSecs = [
-        { title:'GƏLİRLƏR',               codes:['1001','1002','1012','1013','1016'] },
-        { title:'XƏRCLƏR',                 codes:['1021','1022','1023','1102','1106','1031','1034','1006','1041','1042','1045','1056','1076'] },
-        { title:'VERGİ HESABI',            codes:['3001','3002','3003','3004'] },
-        { title:'BALANS — AKTİVLƏR',       codes:['2001','2002','2003','2004','2005','2007','2008','1200','2009','2011','2012','2014','2016','2018','2019'] },
-        { title:'BALANS — ÖHDƏLİKLƏR & KAPİTAL', codes:['2020','2021','2022','2023','2027','2031','2033','2034','2039','2140','2040','2043','2049','2050','2052','2053','2057','2062'] },
-        { title:'GƏLİR/XƏRC DÖVRİYYƏSİ', codes:['2063','2064','2066','2071','2073'] },
+        // PDF: sat.200–218 — Gəlirlər
+        { title:'GƏLİRLƏR (sat.200–218)',
+          codes:['1001','1002','1012','1013','1016','1021','1034','1006','1041','1042','1045','1056'] },
+        // PDF: sat.221–236 — Xərclər (bagliHarc)
+        { title:'XƏRCLƏR (sat.221–236)',
+          codes:['2001','2002','2003','2004','2005','2007','2008','1200','2009','2011','2012','2014',
+                 '2016','2018','2019','2020','2021','2022','2023','2027','2031','2033','2034','2039',
+                 '2140','2040','2043','2049','2050','2052','2053','2057','2062','2063','2064','2066',
+                 '2071','2073'] },
+        // PDF: sat.237+ — Verginin hesablanması
+        { title:'VERGİNİN HESABLANMASI (sat.237+)',
+          codes:['3001','3002','3003','3004','1022','1023','1102','1106','1031','1076'] },
       ];
       let ri = 6;
       for (const sec of simpleSecs) {
