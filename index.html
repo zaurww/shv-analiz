@@ -240,6 +240,13 @@
     border-radius: 8px; padding: 12px 16px; color: var(--red);
     font-size: 13px; margin-top: 12px; display: none;
   }
+  .tab-btn {
+    padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 500;
+    cursor: pointer; border: 1px solid var(--border); background: var(--bg3);
+    color: var(--muted); font-family: var(--sans); transition: all 0.2s; white-space: nowrap;
+  }
+  .tab-btn:hover { background: var(--border); color: var(--text); }
+  .tab-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 </style>
 </head>
 <body>
@@ -250,8 +257,13 @@
     <h1>ŞƏXSİ HESAB ANALİZATORU</h1>
     <p>Vergi portalından yüklənmiş XLS faylı ilə işləyir</p>
   </div>
+  <div style="margin-left:auto;display:flex;gap:8px;">
+    <button class="tab-btn active" id="tabShv" onclick="switchTab('shv')">📋 Şəxsi Hesab</button>
+    <button class="tab-btn" id="tabXml" onclick="switchTab('xml')">📄 MV Bəyannaməsi XML</button>
+  </div>
 </div>
 
+<div id="tab-shv">
 <div id="drop-section">
   <div class="drop-zone" id="dropZone">
     <div class="drop-icon">📂</div>
@@ -265,8 +277,25 @@
   <div class="spinner" id="spinner"></div>
   <div class="error-box" id="errorBox"></div>
 </div>
-
 <div id="results"></div>
+</div>
+
+<div id="tab-xml" style="display:none;">
+<div id="xml-drop-section" style="padding:60px 32px;display:flex;flex-direction:column;align-items:center;gap:24px;">
+  <div class="drop-zone" id="xmlDropZone">
+    <div class="drop-icon">🗂️</div>
+    <h2>MV Bəyannaməsi XML faylını yükləyin</h2>
+    <p>Portaldakı "XML endir" ilə yüklənmiş MENFEET_1 faylı</p>
+    <label class="btn-upload">
+      XML seçin
+      <input type="file" id="xmlFileInput" accept=".xml">
+    </label>
+  </div>
+  <div class="spinner" id="xmlSpinner"></div>
+  <div class="error-box" id="xmlErrorBox"></div>
+</div>
+<div id="xml-results" style="display:none;padding:24px 32px 48px;"></div>
+</div>
 
 <script>
 'use strict';
@@ -1219,6 +1248,531 @@ const ui = {
 // ═══════════════════════════════════════════════════════════════
 
 initDropZone();
+
+// ═══════════════════════════════════════════════════════════════
+// SECTION 9 — TAB SWITCH
+// ═══════════════════════════════════════════════════════════════
+
+function switchTab(tab) {
+  document.getElementById('tab-shv').style.display = tab === 'shv' ? 'block' : 'none';
+  document.getElementById('tab-xml').style.display = tab === 'xml' ? 'block' : 'none';
+  document.getElementById('tabShv').classList.toggle('active', tab === 'shv');
+  document.getElementById('tabXml').classList.toggle('active', tab === 'xml');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SECTION 10 — MV BƏYANNAMƏSI XML MODULE
+// ═══════════════════════════════════════════════════════════════
+//
+// MV_LABELS: XML daxili kod → { beyCode: "bəyannamə kodu", label: "ad" }
+// beyCode — PDF bəyannaməsindəki göstərici nömrəsi (200, 200.1, ...)
+// Məbləğlər XML ilə PDF tutuşdurularaq map edilib.
+//
+const MV_LABELS = {
+  // ── vergiHesab ───────────────────────────────────────────────
+  '1001': { beyCode:'200',     label:'Malların/işlərin/xidmətlərin təqdim edilməsindən gəlir (Cəmi)' },
+  '1002': { beyCode:'200.1',   label:'Malların təqdim edilməsindən gəlir' },
+  '1012': { beyCode:'203',     label:'Əmlakın icarəyə verilməsindən gəlir' },
+  '1013': { beyCode:'204',     label:'Digər gəlirlər' },
+  '1016': { beyCode:'208',     label:'Qeyri-sahibkarlıq fəaliyyətindən gəlirlər' },
+  '1021': { beyCode:'300',     label:'Malların/işlərin/xidmətlərin dəyəri (maya dəyəri)' },
+  '1022': { beyCode:'304',     label:'Amortizasiya xərcləri' },
+  '1023': { beyCode:'305',     label:'Təmir xərcləri' },
+  '1102': { beyCode:'306',     label:'Ehtiyat fonduna ayırmalar' },
+  '1106': { beyCode:'307',     label:'Sığorta xərcləri' },
+  '1031': { beyCode:'308',     label:'Faiz xərcləri' },
+  '1034': { beyCode:'310',     label:'İnzibati xərclər' },
+  '1006': { beyCode:'315',     label:'Digər xərclər (gəlirdən çıxılan)' },
+  '1041': { beyCode:'320',     label:'Cəmi xərclər' },
+  '1042': { beyCode:'321',     label:'Vergiyə cəlb olunan mənfəət (zərər)' },
+  '1045': { beyCode:'323',     label:'Hesabat dövrü üçün vergiyə cəlb olunan gəlir' },
+  '1056': { beyCode:'330',     label:'Büdcəyə ödənilməli cəmi vergi' },
+  '1076': { beyCode:'315.6*',  label:'Hesabat ilinin son günü əsas vəsaitlərin dəyəri' },
+  // ── hesabatDovruVergiHesab (3xxx) ────────────────────────────
+  '3001': { beyCode:'39',      label:'Hesabat dövrü üçün hesablanmış vergi' },
+  '3002': { beyCode:'40',      label:'Hesabat dövrü üçün ödənilmiş avans vergi' },
+  '3003': { beyCode:'41',      label:'Hesabat dövrü üçün büdcəyə ödənilməli vergi' },
+  '3004': { beyCode:'42',      label:'Artıq ödənilmiş vergi məbləği' },
+  // ── bagliHarc (balans) ────────────────────────────────────────
+  '2001': { beyCode:'1',       label:'Cəmi aktivlər (hesabat dövrünün əvvəlinə)' },
+  '2002': { beyCode:'1.1',     label:'Əsas vəsaitlərin dəyəri' },
+  '2003': { beyCode:'1.1.1',   label:'Torpaqlar, binalar, tikililər və qurğular' },
+  '2004': { beyCode:'1.1.2',   label:'Maşınlar və avadanlıq' },
+  '2005': { beyCode:'1.1.3',   label:'Nəqliyyat vasitələri' },
+  '2007': { beyCode:'1.2',     label:'Dövriyyə aktivləri' },
+  '2008': { beyCode:'1.2.1',   label:'Pul vəsaitləri' },
+  '1200': { beyCode:'1.2.1.1', label:'Bank hesablarında pul vəsaitləri' },
+  '2009': { beyCode:'1.2.1.2', label:'Kassa' },
+  '2011': { beyCode:'1.2.2',   label:'Debitor borclar' },
+  '2012': { beyCode:'1.2.3',   label:'Ehtiyatlar (mal-material)' },
+  '2014': { beyCode:'1.2.4',   label:'Avans ödənişlər' },
+  '2016': { beyCode:'1.2.5',   label:'Digər dövriyyə aktivləri' },
+  '2018': { beyCode:'1.3',     label:'Qeyri-maddi aktivlər' },
+  '2019': { beyCode:'1.4',     label:'Uzunmüddətli investisiyalar' },
+  '2020': { beyCode:'2',       label:'Cəmi öhdəliklər' },
+  '2021': { beyCode:'2.1',     label:'Uzunmüddətli öhdəliklər' },
+  '2022': { beyCode:'2.1.1',   label:'Uzunmüddətli kreditlər' },
+  '2023': { beyCode:'2.1.2',   label:'Digər uzunmüddətli öhdəliklər' },
+  '2027': { beyCode:'2.2',     label:'Qısamüddətli öhdəliklər' },
+  '2031': { beyCode:'2.2.1',   label:'Qısamüddətli kreditlər' },
+  '2033': { beyCode:'2.2.2',   label:'Kreditor borclar (satıcılara)' },
+  '2034': { beyCode:'2.2.3',   label:'Avans alınmış ödənişlər' },
+  '2039': { beyCode:'2.2.4',   label:'Büdcəyə borclar' },
+  '2140': { beyCode:'2.2.4.1', label:'Vergi borcu (büdcəyə)' },
+  '2040': { beyCode:'2.2.5',   label:'Əməkhaqqı üzrə borclar' },
+  '2043': { beyCode:'2.2.6',   label:'Dividend borcları' },
+  '2049': { beyCode:'3',       label:'Nizamnamə kapitalı' },
+  '2050': { beyCode:'3.1',     label:'Ödənilmiş nizamnamə kapitalı' },
+  '2052': { beyCode:'3.2',     label:'Bölüşdürülməmiş mənfəət (ötən illər)' },
+  '2053': { beyCode:'3.3',     label:'Ötən illər zərəri' },
+  '2057': { beyCode:'3.4',     label:'Hesabat ili mənfəəti / zərəri' },
+  '2062': { beyCode:'3.5',     label:'Ehtiyat fondu' },
+  '2063': { beyCode:'4',       label:'Cəmi gəlir (dövriyyə)' },
+  '2064': { beyCode:'4.1',     label:'Vergidən azad olunan gəlir' },
+  '2066': { beyCode:'4.2',     label:'Güzəştli vergi dərəcəsi tətbiq olunan gəlir' },
+  '2071': { beyCode:'5',       label:'Cəmi xərclər (dövriyyə)' },
+  '2073': { beyCode:'5.1',     label:'Çıxılan xərclər cəmi' },
+  // ── aktivler (Əlavə 1) ────────────────────────────────────────
+  '4017': { beyCode:'1',       label:'Cəmi aktivlər' },
+  '4022': { beyCode:'2',       label:'Kapital və ehtiyatlar cəmi' },
+  '4015': { beyCode:'1.2.2',   label:'Debitor borclar (məcmu)' },
+  '4004': { beyCode:'1.2.1a',  label:'Qısamüddətli investisiyalar' },
+  '4040': { beyCode:'1.2.3a',  label:'Bioloji aktivlər' },
+  '4041': { beyCode:'1.2.3b',  label:'Kənd təsərrüfatı məhsulları' },
+  '4005': { beyCode:'1.2.3.1', label:'İstehsal ehtiyatları' },
+  '4042': { beyCode:'1.2.3.2', label:'Hazır məhsul' },
+  '4006': { beyCode:'1.2.3.3', label:'Mallar' },
+  '4043': { beyCode:'1.2.3.4', label:'Natamam istehsalat' },
+  '4044': { beyCode:'1.2.3.5', label:'Digər ehtiyatlar' },
+  '4046': { beyCode:'1.2.5a',  label:'Gələcək dövrün xərcləri' },
+  '4049': { beyCode:'1.2.6',   label:'Digər cari aktivlər' },
+  '4053': { beyCode:'1.3.1',   label:'Uzunmüddətli debitor borclar' },
+  '4054': { beyCode:'1.3.2',   label:'Uzunmüddətli investisiyalar' },
+  '4047': { beyCode:'1.1',     label:'Torpaqlar, binalar, tikililər (Əlavə 1)' },
+  '4051': { beyCode:'1.1a',    label:'İstifadə hüququ aktivləri' },
+  '4048': { beyCode:'1.1.4',   label:'Qeyri-maddi aktivlər (Əlavə 1)' },
+  '4010': { beyCode:'1.3.3',   label:'Uzunmüddətli bioloji aktivlər' },
+  '4011': { beyCode:'1.3.4',   label:'Uzunmüddətli kənd təsərrüfatı məhsulları' },
+  '4012': { beyCode:'1.3.5',   label:'Başqa uzunmüddətli aktivlər' },
+  '4018': { beyCode:'1.2.4a',  label:'Müştərilərə verilmiş avans' },
+  '4019': { beyCode:'1.2.4b',  label:'ƏDV-nin əvəzləşdirilməsi' },
+  '4020': { beyCode:'2.2.4b',  label:'Digər dövlət fondlarına borclar' },
+  '4021': { beyCode:'1.2.7',   label:'Xarici valyutada aktivlər' },
+  // ── kapitalEhtiyatlar (Əlavə 1) ───────────────────────────────
+  '4023': { beyCode:'1',       label:'Cəmi aktivlər (Əlavə 1, balans)' },
+  '5001': { beyCode:'1.1*',    label:'Amortizasiya (Əlavə 1)' },
+  '4024': { beyCode:'2.1',     label:'Nizamnamə kapitalı (Əlavə 1)' },
+  '4025': { beyCode:'2.2',     label:'Yenidən qiymətləndirmə ehtiyatı' },
+  '6001': { beyCode:'3',       label:'Cəmi öhdəliklər (Əlavə 1)' },
+  '4027': { beyCode:'3.1',     label:'Uzunmüddətli öhdəliklər (Əlavə 1)' },
+  '4029': { beyCode:'3.1.1',   label:'Uzunmüddətli lizinq öhdəlikləri' },
+  '4030': { beyCode:'3.1.2',   label:'Uzunmüddətli istiqraz' },
+  '4032': { beyCode:'3.2',     label:'Qısamüddətli öhdəliklər (Əlavə 1)' },
+  '4052': { beyCode:'3.2.1',   label:'Qısamüddətli kreditlər (Əlavə 1)' },
+  '4034': { beyCode:'3.2.2',   label:'Kreditor borclar (Əlavə 1)' },
+  '4026': { beyCode:'2.3',     label:'Bölüşdürülməmiş mənfəət (Əlavə 1)' },
+  '7001': { beyCode:'2.4',     label:'Xüsusi ehtiyat fondu' },
+  '7002': { beyCode:'2.5',     label:'Digər kapital ehtiyatları' },
+  '4028': { beyCode:'2',       label:'Kapital (Əlavə 1)' },
+  '4031': { beyCode:'3.2.3',   label:'Qısamüddətli lizinq öhdəlikləri' },
+  '4033': { beyCode:'3.2.4',   label:'Digər qısamüddətli öhdəliklər' },
+  '5050': { beyCode:'—',       label:'Xüsusi vergi rejimi' },
+};
+
+// Köməkçi: kod üçün beyCode və label al
+function mvInfo(kod) {
+  const info = MV_LABELS[kod];
+  if (info) return info;
+  return { beyCode: '—', label: `Göstərici ${kod}` };
+}
+
+// ── XML Drag & Drop ───────────────────────────────────────────
+(function initXmlDropZone() {
+  const dz = document.getElementById('xmlDropZone');
+  const fi = document.getElementById('xmlFileInput');
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+  dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag-over'); const f = e.dataTransfer.files[0]; if (f) handleXml(f); });
+  fi.addEventListener('change', e => { if (e.target.files[0]) handleXml(e.target.files[0]); });
+})();
+
+function handleXml(file) {
+  document.getElementById('xmlSpinner').style.display = 'block';
+  document.getElementById('xmlErrorBox').style.display = 'none';
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = XmlParser.parse(e.target.result);
+      XmlRenderer.render(data);
+      window._xmlData = data;
+    } catch(err) {
+      const eb = document.getElementById('xmlErrorBox');
+      eb.textContent = 'XML xətası: ' + err.message;
+      eb.style.display = 'block';
+      console.error(err);
+    }
+    document.getElementById('xmlSpinner').style.display = 'none';
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+// ── XML Parser ────────────────────────────────────────────────
+const XmlParser = (() => {
+  function parse(xmlText) {
+    const doc = new DOMParser().parseFromString(xmlText, 'text/xml');
+    const get  = tag => doc.querySelector(tag)?.textContent?.trim() || '';
+    const getN = tag => parseFloat(get(tag)) || 0;
+
+    const vergiNo     = get('vergiNo');
+    const adi         = get('adi');
+    const yil         = get('yil');
+    const ay          = get('ay');
+    const donem       = ay ? `${yil}/${ay.padStart(2,'0')}` : yil;
+    const beyannameTipi = get('beyannameTipi') === '0' ? 'Cari' : 'Dəqiqləşdirilmiş';
+    const budce       = getN('budceyeOdenilmeli');
+    const faaliyetAdi = get('faaliyetNovuAdi');
+    const umidsizBorc = getN('umidsizBorcCemi');
+
+    const allData = {};
+
+    // Sadə seksiyalar: <gosterici> + <mebleg>
+    for (const sec of ['vergiHesab','bagliHarc','hesabatDovruVergiHesab1','hesabatDovruVergiHesab2','hesabatDovruVergiHesab']) {
+      for (const row of doc.querySelectorAll(`${sec} row`)) {
+        const kod    = row.querySelector('gosterici')?.textContent?.trim();
+        const mebleg = parseFloat(row.querySelector('mebleg')?.textContent) || 0;
+        if (kod && !allData[kod]) allData[kod] = { mebleg };
+      }
+    }
+
+    // Aktivlər (Əlavə 1) — 4 sütun
+    for (const row of doc.querySelectorAll('aktivler row')) {
+      const kod = row.querySelector('gosterici')?.textContent?.trim();
+      if (!kod) continue;
+      allData['A_'+kod] = {
+        evvel:  parseFloat(row.querySelector('hesabatDovruEvveline')?.textContent) || 0,
+        dahil:  parseFloat(row.querySelector('dahilOlunan')?.textContent)          || 0,
+        takdim: parseFloat(row.querySelector('takdimEdilen')?.textContent)         || 0,
+        son:    parseFloat(row.querySelector('hesabatDovruSonuna')?.textContent)   || 0,
+      };
+    }
+
+    // Kapital & Öhdəliklər (Əlavə 1) — 5 sütun
+    for (const row of doc.querySelectorAll('kapitalEhtiyatlar row')) {
+      const kod = row.querySelector('gosterici')?.textContent?.trim();
+      if (!kod) continue;
+      allData['K_'+kod] = {
+        evvel:  parseFloat(row.querySelector('hesabatDovruEvveline')?.textContent) || 0,
+        dahil:  parseFloat(row.querySelector('dahilOlunan')?.textContent)          || 0,
+        takdim: parseFloat(row.querySelector('takdimEdilen')?.textContent)         || 0,
+        silen:  parseFloat(row.querySelector('silinen')?.textContent)              || 0,
+        son:    parseFloat(row.querySelector('hesabatDovruSonuna')?.textContent)   || 0,
+      };
+    }
+
+    return { vergiNo, adi, donem, beyannameTipi, budce, faaliyetAdi, umidsizBorc, allData };
+  }
+  return { parse };
+})();
+
+// ── XML Renderer ──────────────────────────────────────────────
+const XmlRenderer = (() => {
+  function fmtN(n) {
+    if (n === 0) return '<span class="num-zero">—</span>';
+    const f = Math.abs(n).toLocaleString('az-AZ',{minimumFractionDigits:2,maximumFractionDigits:2});
+    return n < 0 ? `<span class="num-neg">${f}</span>` : `<span class="num-pos">${f}</span>`;
+  }
+
+  // 3 sütun: Bəyannamə kodu | XML kodu | Ad | Məbləğ
+  function simpleTable(codes, data) {
+    const rows = codes
+      .filter(c => data.allData[c] && data.allData[c].mebleg !== undefined)
+      .map(c => {
+        const v    = data.allData[c].mebleg;
+        const info = mvInfo(c);
+        const bold = ['1042','1056','3003','1001','1041'].includes(c) ? 'style="font-weight:700"' : '';
+        return `<tr ${bold}>
+          <td style="text-align:center;font-family:var(--mono);font-size:11px;color:var(--accent)">${esc(info.beyCode)}</td>
+          <td style="text-align:center;font-family:var(--mono);font-size:11px;color:var(--muted)">${c}</td>
+          <td style="text-align:left;font-family:var(--sans);font-size:13px">${esc(info.label)}</td>
+          <td>${fmtN(v)}</td>
+        </tr>`;
+      });
+    if (!rows.length) return '';
+    return `<div class="table-wrap"><table>
+      <thead><tr>
+        <th style="text-align:center">Bəy. kodu</th>
+        <th style="text-align:center">XML kodu</th>
+        <th style="text-align:left">Göstərici adı</th>
+        <th>Məbləğ (₼)</th>
+      </tr></thead>
+      <tbody>${rows.join('')}</tbody></table></div>`;
+  }
+
+  // Aktivlər — 6 sütun
+  function aktivTable(keys, data) {
+    const rows = keys.map(k => {
+      const kod  = k.slice(2);
+      const d    = data.allData[k];
+      const info = mvInfo(kod);
+      return `<tr>
+        <td style="text-align:center;font-family:var(--mono);font-size:11px;color:var(--accent)">${esc(info.beyCode)}</td>
+        <td style="text-align:center;font-family:var(--mono);font-size:11px;color:var(--muted)">${kod}</td>
+        <td style="text-align:left;font-family:var(--sans);font-size:13px">${esc(info.label)}</td>
+        <td>${fmtN(d.evvel)}</td><td>${fmtN(d.dahil)}</td><td>${fmtN(d.takdim)}</td><td>${fmtN(d.son)}</td>
+      </tr>`;
+    });
+    if (!rows.length) return '';
+    return `<div class="table-wrap"><table>
+      <thead><tr>
+        <th style="text-align:center">Bəy. kodu</th>
+        <th style="text-align:center">XML kodu</th>
+        <th style="text-align:left">Göstərici adı</th>
+        <th>Dövrün əvvəlinə</th><th>Daxil olmuşdur</th><th>Təqdim edilmişdir</th><th>Dövrün sonuna</th>
+      </tr></thead>
+      <tbody>${rows.join('')}</tbody></table></div>`;
+  }
+
+  // Kapital — 7 sütun
+  function kapTable(keys, data) {
+    const rows = keys.map(k => {
+      const kod  = k.slice(2);
+      const d    = data.allData[k];
+      const info = mvInfo(kod);
+      return `<tr>
+        <td style="text-align:center;font-family:var(--mono);font-size:11px;color:var(--accent)">${esc(info.beyCode)}</td>
+        <td style="text-align:center;font-family:var(--mono);font-size:11px;color:var(--muted)">${kod}</td>
+        <td style="text-align:left;font-family:var(--sans);font-size:13px">${esc(info.label)}</td>
+        <td>${fmtN(d.evvel)}</td><td>${fmtN(d.dahil)}</td><td>${fmtN(d.takdim)}</td><td>${fmtN(d.silen||0)}</td><td>${fmtN(d.son)}</td>
+      </tr>`;
+    });
+    if (!rows.length) return '';
+    return `<div class="table-wrap"><table>
+      <thead><tr>
+        <th style="text-align:center">Bəy. kodu</th>
+        <th style="text-align:center">XML kodu</th>
+        <th style="text-align:left">Göstərici adı</th>
+        <th>Dövrün əvvəlinə</th><th>Daxil olmuşdur</th><th>Təqdim edilmişdir</th><th>Silinmişdir</th><th>Dövrün sonuna</th>
+      </tr></thead>
+      <tbody>${rows.join('')}</tbody></table></div>`;
+  }
+
+  function render(data) {
+    document.getElementById('xml-drop-section').style.display = 'none';
+    const el = document.getElementById('xml-results');
+    el.style.display = 'block';
+
+    const gelir = data.allData['1001']?.mebleg || 0;
+    const xrc   = data.allData['1041']?.mebleg || 0;
+    const mv    = data.allData['1042']?.mebleg || 0;
+
+    const aktivKeys = Object.keys(data.allData).filter(k => k.startsWith('A_')).sort();
+    const kapKeys   = Object.keys(data.allData).filter(k => k.startsWith('K_')).sort();
+
+    const sections = [
+      { title:'💰 Gəlirlər',                      codes:['1001','1002','1012','1013','1016'] },
+      { title:'📉 Xərclər',                        codes:['1021','1022','1023','1102','1106','1031','1034','1006','1041','1042','1045','1056','1076'] },
+      { title:'🧾 Vergi hesabı (hesabat dövrü)',   codes:['3001','3002','3003','3004'] },
+      { title:'🏦 Balans — Aktivlər',              codes:['2001','2002','2003','2004','2005','2007','2008','1200','2009','2011','2012','2014','2016','2018','2019'] },
+      { title:'📋 Balans — Öhdəliklər & Kapital',  codes:['2020','2021','2022','2023','2027','2031','2033','2034','2039','2140','2040','2043','2049','2050','2052','2053','2057','2062'] },
+      { title:'🔄 Gəlir/Xərc dövriyyəsi',         codes:['2063','2064','2066','2071','2073'] },
+    ];
+
+    let html = `
+      <div class="company-card">
+        <div>
+          <div class="company-name">${esc(data.adi)}</div>
+          <div class="company-voen">VÖEN: ${esc(data.vergiNo)} · ${esc(data.faaliyetAdi)}</div>
+        </div>
+        <div class="company-period">
+          <div>Dövr: ${esc(data.donem)}</div>
+          <div style="margin-top:2px">Bəyannamə: ${esc(data.beyannameTipi)}</div>
+        </div>
+      </div>
+      <div class="summary-row">
+        <div class="chip"><div class="chip-label">Büdcəyə ödənilməli</div><div class="chip-value ${data.budce>0?'danger':'ok'}">${data.budce.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼</div></div>
+        <div class="chip"><div class="chip-label">Cəmi gəlir</div><div class="chip-value ok">${gelir.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼</div></div>
+        <div class="chip"><div class="chip-label">Cəmi xərclər</div><div class="chip-value">${xrc.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼</div></div>
+        <div class="chip"><div class="chip-label">Vergiyə cəlb olunan mənfəət</div><div class="chip-value ${mv>0?'ok':'danger'}">${mv.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼</div></div>
+        <div class="chip"><div class="chip-label">Ümidsiz borc</div><div class="chip-value ${data.umidsizBorc>0?'danger':'ok'}">${data.umidsizBorc.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼</div></div>
+      </div>`;
+
+    for (const sec of sections) {
+      const tbl = simpleTable(sec.codes, data);
+      if (tbl) html += `<div class="section-title">${sec.title}</div>${tbl}`;
+    }
+    if (aktivKeys.length) html += `<div class="section-title">📦 Aktivlər (Əlavə 1)</div>${aktivTable(aktivKeys, data)}`;
+    if (kapKeys.length)   html += `<div class="section-title">🏛️ Kapital & Öhdəliklər (Əlavə 1)</div>${kapTable(kapKeys, data)}`;
+
+    html += `<div class="action-row">
+      <button class="btn btn-primary" onclick="XmlExporter.download(window._xmlData)">⬇ XLSX yüklə</button>
+      <button class="btn btn-secondary" onclick="XmlRenderer.reset()">↩ Yeni XML</button>
+    </div>`;
+
+    el.innerHTML = html;
+  }
+
+  function reset() {
+    document.getElementById('xml-drop-section').style.display = 'flex';
+    document.getElementById('xml-results').style.display = 'none';
+    document.getElementById('xmlFileInput').value = '';
+  }
+
+  return { render, reset };
+})();
+
+// ── XML XLSX Exporter ─────────────────────────────────────────
+const XmlExporter = (() => {
+  async function download(data) {
+    const btn = document.querySelector('#xml-results .btn-primary');
+    btn.innerHTML = '⏳ Hazırlanır...'; btn.disabled = true;
+    try {
+      const wb     = new ExcelJS.Workbook();
+      const numFmt = '#,##0.00;[Red]-#,##0.00;"-"';
+      const fl  = hex => ({ type:'pattern', pattern:'solid', fgColor:{ argb:'FF'+hex } });
+      const fn  = (hex,bold,sz) => ({ name:'Arial', size:sz||10, bold:!!bold, color:{ argb:'FF'+hex } });
+      const aL  = () => ({ horizontal:'left',   vertical:'middle' });
+      const aR  = () => ({ horizontal:'right',  vertical:'middle' });
+      const aC  = () => ({ horizontal:'center', vertical:'middle' });
+      const brd = () => { const s={style:'thin',color:{argb:'FFD1D5DB'}}; return {top:s,bottom:s,left:s,right:s}; };
+
+      // ── Sheet 1: MV Göstəriciləri ─────────────────────────────
+      // Sütunlar: Bəy.kodu | XML kodu | Göstərici adı | Məbləğ
+      const ws1 = wb.addWorksheet('MV Göstəriciləri', {
+        properties:{ tabColor:{ argb:'FF3B82F6' } },
+        views:[{state:'frozen',ySplit:5}]
+      });
+      ws1.columns = [{ width:12 },{ width:10 },{ width:52 },{ width:20 }];
+
+      ws1.mergeCells('A1:D1');
+      Object.assign(ws1.getRow(1).getCell(1), { value:data.adi, font:fn('1E3A5F',true,13), fill:fl('DBEAFE'), alignment:aL() });
+      ws1.getRow(1).height = 22;
+
+      ws1.mergeCells('A2:D2');
+      Object.assign(ws1.getRow(2).getCell(1), {
+        value:`VÖEN: ${data.vergiNo}   |   Dövr: ${data.donem}   |   Bəyannamə: ${data.beyannameTipi}   |   ${data.faaliyetAdi}`,
+        font:fn('6B7280',false,9), fill:fl('EFF6FF'), alignment:aL(),
+      });
+      ws1.getRow(2).height = 14;
+
+      const gelir = data.allData['1001']?.mebleg || 0;
+      const xrc   = data.allData['1041']?.mebleg || 0;
+      const mv    = data.allData['1042']?.mebleg || 0;
+      ws1.mergeCells('A3:D3');
+      Object.assign(ws1.getRow(3).getCell(1), {
+        value:`Gəlir: ${gelir.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼   |   Xərclər: ${xrc.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼   |   Mənfəət: ${mv.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼   |   Büdcəyə: ${data.budce.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼`,
+        font:fn(data.budce>0?'B45309':'065F46',true,10), fill:fl(data.budce>0?'FEF3C7':'D1FAE5'), alignment:aL(),
+      });
+      ws1.getRow(3).height = 18;
+      ws1.getRow(4).height = 8;
+
+      // Header
+      const hr = ws1.getRow(5); hr.height = 17;
+      ['Bəy. kodu','XML kodu','Göstərici adı','Məbləğ (₼)'].forEach((v,i) => {
+        const c = hr.getCell(i+1);
+        c.value=v; c.font=fn('FFFFFF',true,10); c.fill=fl('1D4ED8');
+        c.alignment = i===3?aR():i<2?aC():aL(); c.border=brd();
+      });
+
+      const KEY_CODES = new Set(['1001','1041','1042','1056','3003']);
+      const simpleSecs = [
+        { title:'GƏLİRLƏR',               codes:['1001','1002','1012','1013','1016'] },
+        { title:'XƏRCLƏR',                 codes:['1021','1022','1023','1102','1106','1031','1034','1006','1041','1042','1045','1056','1076'] },
+        { title:'VERGİ HESABI',            codes:['3001','3002','3003','3004'] },
+        { title:'BALANS — AKTİVLƏR',       codes:['2001','2002','2003','2004','2005','2007','2008','1200','2009','2011','2012','2014','2016','2018','2019'] },
+        { title:'BALANS — ÖHDƏLİKLƏR & KAPİTAL', codes:['2020','2021','2022','2023','2027','2031','2033','2034','2039','2140','2040','2043','2049','2050','2052','2053','2057','2062'] },
+        { title:'GƏLİR/XƏRC DÖVRİYYƏSİ', codes:['2063','2064','2066','2071','2073'] },
+      ];
+      let ri = 6;
+      for (const sec of simpleSecs) {
+        ws1.mergeCells(`A${ri}:D${ri}`);
+        Object.assign(ws1.getRow(ri).getCell(1), { value:sec.title, font:fn('1E40AF',true,9), fill:fl('EFF6FF'), alignment:aL() });
+        ws1.getRow(ri).height = 15; ri++;
+        for (const c of sec.codes) {
+          if (!data.allData[c] || data.allData[c].mebleg===undefined) continue;
+          const v    = data.allData[c].mebleg;
+          const info = mvInfo(c);
+          const isKey = KEY_CODES.has(c);
+          const dr = ws1.getRow(ri++); dr.height = 16;
+          [info.beyCode, c, info.label, v].forEach((val,ci) => {
+            const cell = dr.getCell(ci+1);
+            cell.value=val; cell.border=brd();
+            cell.fill=fl(isKey?'FFF7ED':(ri%2===0?'F9FAFB':'FFFFFF'));
+            cell.alignment = ci===3?aR():ci<2?aC():aL();
+            if (ci===0) cell.font=fn('1D4ED8',true,10);
+            else if (ci===1) cell.font=fn('6B7280',false,9);
+            else cell.font=fn(isKey?'92400E':'111827',isKey,10);
+            if (ci===3) cell.numFmt=numFmt;
+          });
+        }
+        ri++;
+      }
+
+      // ── Sheet 2: Aktivlər ─────────────────────────────────────
+      // Sütunlar: Bəy.kodu | XML kodu | Ad | dövrEvvəl | dahil | takdim | son
+      const ws2 = wb.addWorksheet('Aktivlər (Əlavə 1)', { properties:{ tabColor:{ argb:'FF10B981' } } });
+      ws2.columns = [{ width:12 },{ width:10 },{ width:52 },{ width:18 },{ width:18 },{ width:18 },{ width:18 }];
+      ws2.mergeCells('A1:G1');
+      Object.assign(ws2.getRow(1).getCell(1), { value:`${data.adi}  |  Aktivlər (Əlavə №1)  |  ${data.donem}`, font:fn('065F46',true,12), fill:fl('D1FAE5'), alignment:aL() });
+      ws2.getRow(1).height = 20;
+      const h2 = ws2.getRow(2); h2.height = 17;
+      ['Bəy. kodu','XML kodu','Göstərici adı','Dövrün əvvəlinə','Daxil olmuşdur','Təqdim edilmişdir','Dövrün sonuna'].forEach((v,i) => {
+        const c=h2.getCell(i+1); c.value=v; c.font=fn('FFFFFF',true,10); c.fill=fl('065F46');
+        c.alignment=i>2?aR():i<2?aC():aL(); c.border=brd();
+      });
+      let r2=3;
+      for (const k of Object.keys(data.allData).filter(k=>k.startsWith('A_')).sort()) {
+        const kod=k.slice(2); const d=data.allData[k]; const info=mvInfo(kod);
+        const dr=ws2.getRow(r2++); dr.height=16;
+        [info.beyCode,kod,info.label,d.evvel,d.dahil,d.takdim,d.son].forEach((v,ci)=>{
+          const cell=dr.getCell(ci+1); cell.value=v; cell.border=brd();
+          cell.fill=fl(r2%2===0?'F0FDF4':'FFFFFF');
+          cell.alignment=ci>2?aR():ci<2?aC():aL();
+          if(ci===0) cell.font=fn('1D4ED8',true,10);
+          else if(ci===1) cell.font=fn('6B7280',false,9);
+          else cell.font=fn('111827',false,10);
+          if(ci>2) cell.numFmt=numFmt;
+        });
+      }
+
+      // ── Sheet 3: Kapital & Öhdəliklər ────────────────────────
+      // Sütunlar: Bəy.kodu | XML kodu | Ad | evvəl | dahil | takdim | silen | son
+      const ws3 = wb.addWorksheet('Kapital & Öhdəliklər', { properties:{ tabColor:{ argb:'FFF59E0B' } } });
+      ws3.columns = [{ width:12 },{ width:10 },{ width:52 },{ width:18 },{ width:18 },{ width:18 },{ width:18 },{ width:18 }];
+      ws3.mergeCells('A1:H1');
+      Object.assign(ws3.getRow(1).getCell(1), { value:`${data.adi}  |  Kapital & Öhdəliklər (Əlavə №1)  |  ${data.donem}`, font:fn('78350F',true,12), fill:fl('FEF3C7'), alignment:aL() });
+      ws3.getRow(1).height = 20;
+      const h3=ws3.getRow(2); h3.height=17;
+      ['Bəy. kodu','XML kodu','Göstərici adı','Dövrün əvvəlinə','Daxil olmuşdur','Təqdim edilmişdir','Silinmişdir','Dövrün sonuna'].forEach((v,i)=>{
+        const c=h3.getCell(i+1); c.value=v; c.font=fn('FFFFFF',true,10); c.fill=fl('B45309');
+        c.alignment=i>2?aR():i<2?aC():aL(); c.border=brd();
+      });
+      let r3=3;
+      for (const k of Object.keys(data.allData).filter(k=>k.startsWith('K_')).sort()) {
+        const kod=k.slice(2); const d=data.allData[k]; const info=mvInfo(kod);
+        const dr=ws3.getRow(r3++); dr.height=16;
+        [info.beyCode,kod,info.label,d.evvel,d.dahil,d.takdim,d.silen||0,d.son].forEach((v,ci)=>{
+          const cell=dr.getCell(ci+1); cell.value=v; cell.border=brd();
+          cell.fill=fl(r3%2===0?'FFFBEB':'FFFFFF');
+          cell.alignment=ci>2?aR():ci<2?aC():aL();
+          if(ci===0) cell.font=fn('1D4ED8',true,10);
+          else if(ci===1) cell.font=fn('6B7280',false,9);
+          else cell.font=fn('111827',false,10);
+          if(ci>2) cell.numFmt=numFmt;
+        });
+      }
+
+      const buffer = await wb.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href=url; a.download=`mv_beyanname_${data.vergiNo}_${data.donem.replace('/','_')}.xlsx`; a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      btn.innerHTML='⬇ XLSX yüklə'; btn.disabled=false;
+    }
+  }
+  return { download };
+})();
 </script>
 </body>
 </html>
