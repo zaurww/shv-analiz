@@ -1,204 +1,232 @@
-# shv-analiz
+# Vergi Analizatoru
 
-Tax analysis tool for Azerbaijan — personal tax account statement analyzer + profit tax declaration XML analyzer.
+Tax analysis toolkit for Azerbaijan. Runs entirely in the browser — no backend, no build step.
 
-**Live (always the latest version):** https://zaurww.github.io/shv-analiz/  
+**Live:** https://zaurww.github.io/shv-analiz/  
 **Repo:** https://github.com/zaurww/shv-analiz (Public)  
-**Stack:** Single HTML file (`index.html`), no backend, no build step. ExcelJS 4.3.0 via CDN.  
-**Deploy:** Upload `index.html` to GitHub → commit → instantly live via Pages.
+**Deploy:** Upload files to GitHub → commit → instantly live via Pages.
 
-> **⚠️ IMPORTANT FOR CLAUDE:** Authoritative source is always https://zaurww.github.io/shv-analiz/  
-> Before any changes: `web_fetch` that URL first. If user uploaded `index.html` — use that file (it's newer).  
-> Never rely on files from previous conversations.
-
-> **Chat language:** Russian by default. UI and code comments in Azerbaijani/English.
+> **For Claude:** Always use the uploaded `index.html` as the source of truth (it is newer than the project file). Never rely on previous conversation memory for code.  
+> **Chat language:** Russian.
 
 ---
 
-## Two Modules
+## Three Modules
 
-### Tab 1 — Şəxsi Hesab (XLS)
-`.xls` from tax portal (ISO-8859-1 HTML) → parse → analysis table with KYB/SYB → XLSX (2 sheets).
-
-### Tab 2 — MV Bəyannaməsi XML
-`.xml` from `new.e-taxes.gov.az` ("XML endir") → parse → all indicators with PDF line codes → XLSX (3 sheets).
-
----
-
-## File Structure (~1800 lines, 10 sections)
-
-| Section | Module |
-|---|---|
-| 1 | Constants: `TAX_ORDER`, `DECL_PATTERN` |
-| 2 | File I/O: drag & drop, FileReader iso-8859-1 |
-| 3 | `Parser` IIFE: raw HTML → AnalysisData |
-| 4 | `Renderer` IIFE: AnalysisData → DOM |
-| 5 | `XlsxExport` IIFE: AnalysisData → XLSX |
-| 6 | Format helpers: `fmt()`, `fmtRaw()`, `esc()` |
-| 7 | UI helpers: `ui.showSpinner`, `ui.showError` |
-| 8 | Bootstrap: `initDropZone()` |
-| 9 | Tab switch: `switchTab('shv'/'xml')` |
-| 10 | XML Module: `MV_LABELS`, `XmlParser`, `XmlRenderer`, `XmlExporter` |
+| Tab | Input | What it does |
+|---|---|---|
+| 📋 Şəxsi Hesab | `.xls` from tax portal | Parses personal tax account statement → analysis table with KYB/SYB detection → XLSX (2 sheets) |
+| 📄 MV Bəyannaməsi | `.xml` from e-taxes portal | Parses profit tax declaration → all indicators with PDF line codes → XLSX (3 sheets) |
+| 📊 ƏDV Bəyannaməsi | multiple `.xml` files | Parses VAT declarations → monthly report across 4 sections → XLSX |
 
 ---
 
-## XML Module — MV_LABELS Code Mapping
+## File Structure
 
-### THE GOLDEN RULE
-**The PDF declaration is the single source of truth.**  
-If a line appears in Gəlirlər in the PDF → it goes in the Gəlirlər section in code.  
-Never place a code based on its XML tag. Always follow the PDF.
-
-### How to Map a New Code
 ```
-1. Find XML <gosterici> code and its <mebleg> value
+index.html              ← Shell: header, tab buttons, tab panels, bootstrap script
+core/
+  styles.css            ← All shared CSS (variables, layout, tables, badges, buttons)
+  ui.js                 ← switchTab(), fmt(), fmtRaw(), esc()
+  xlsx.js               ← Shared ExcelJS helpers: xFill, xFont, xBorderAll, saveWorkbook
+modules/
+  shv/
+    parser.js           ← XLS/HTML text → AnalysisData object
+    renderer.js         ← AnalysisData → DOM HTML
+    exporter.js         ← AnalysisData → XLSX (2 sheets: Analiz + Orijinal)
+    index.js            ← Wires drop zone + file reader → parser → renderer → exporter
+  mv/
+    labels.js           ← MV_LABELS map: XML code → { beyCode, label }
+    parser.js           ← XML text → MV declaration data object
+    renderer.js         ← MV data → DOM HTML (sections + aktivlər + kapital tables)
+    exporter.js         ← MV data → XLSX (3 sheets)
+    index.js            ← Wires drop zone → parser → renderer
+  edv/
+    parser.js           ← ƏDV XML text → monthly data object
+    renderer.js         ← Array of monthly data → DOM HTML (4 sections)
+    exporter.js         ← Monthly data array → XLSX (1 sheet, 4 sections)
+    index.js            ← Wires multi-file drop, deduplication, generate button
+```
+
+---
+
+## How to Add a New Module
+
+1. Create `modules/{name}/` with `parser.js`, `renderer.js`, `exporter.js`, `index.js`
+2. Add a tab button in `index.html`:
+   ```html
+   <button class="tab-btn" id="tab-btn-{name}" onclick="switchTab('{name}')">🔧 Title</button>
+   ```
+3. Add a tab panel in `index.html` (copy the pattern from an existing tab)
+4. Register the id in `core/ui.js` → `TABS` array
+5. Import and call `init` in the bootstrap script:
+   ```js
+   import { init as initNew } from './modules/{name}/index.js';
+   initNew();
+   ```
+
+That's it — no other files need to change.
+
+---
+
+## Module Contracts
+
+### parser.js
+Every parser exports a single `parse(input)` function.  
+Input types: `string` (HTML or XML text).  
+Returns a plain JS object — the "data object" passed to renderer and exporter.
+
+### renderer.js
+Every renderer exports `render(data)`.  
+It hides the drop section, shows the results area, and sets `innerHTML`.  
+It wires buttons (XLSX, reset) **after** setting innerHTML — never before.
+
+### exporter.js
+Every exporter exports `download(data)`.  
+It creates an ExcelJS workbook, builds sheets, calls `saveWorkbook(wb, filename)` from `core/xlsx.js`.  
+ExcelJS is available as a global (`window.ExcelJS`) — loaded via `<script>` tag in `index.html`.
+
+### index.js
+Every module index exports `init()`.  
+It wires DOM events (dragover, drop, change) and calls parser → renderer in sequence.  
+No direct DOM manipulation beyond its own tab panel.
+
+---
+
+## SHV Module — Key Details
+
+### Column Detection (dynamic)
+```js
+let amountIdx = headers.findIndex(h => h.includes('Miqdar') && h.includes('Manat'));
+if (amountIdx === -1) amountIdx = 4; // fallback
+```
+Reason: some portal exports add an extra `Miqdar (ABŞ$)` column, shifting the Manat column from index 4 to 5.
+
+### KYB / SYB Detection
+```js
+const isKyb  = opName.includes('KYB');
+const isKybl = opName.includes('KYBL'); // → kyb_azalma (cancellation)
+const isSyb  = opName.includes('SYB') && !isKyb; // SYB only if no KYB
+```
+
+### Declaration Count (`decl_count`)
+Pattern matched: `/CARİ\(B\)|DƏQİQLƏŞMİŞ\(B\)|DƏQİQLƏŞDİRİLMİŞ\(B\)/`  
+Excluded: `CARİ(ARAYIŞ)`, rows ending in `/N` (auto-generated avans corrections).  
+VAHID MUZDLU: 3 rows per quarter (one per month) → deduped by `date|declType` key in `vahidDates` Set.
+
+### extractTaxKey Priority Order
+```
+Ödəmə tapşırığı / Sərəncam → Diger
+ƏDVQR YYYY/MM
+ƏDV YYYY/MM
+ÖMV YYYY N. Rüb
+VAHID MUZDLU YYYY N. Rüb
+ƏV - N.Rüb YYYY → HŞƏV - YYYY
+HŞƏV YYYY → HŞƏV - YYYY
+MV (not ÖMV) → MV - YYYY
+Universal fallback (YYYY/MM | YYYY N.Rüb | YYYY annual)
+Diger
+```
+
+### AnalysisData Object Shape
+```js
+{
+  companyName, voen, period, printDate, totalDebt,
+  taxes,        // sorted array of TaxEntry objects
+  kybActive, kybCancelled, sybActive, sybCancelled,
+  rawRows,      // all rows from the original statement table
+}
+```
+
+### TaxEntry Shape
+```js
+{
+  key,                          // canonical period string, e.g. "ƏDV 2025/03"
+  hesablama, azalma,            // client declarations
+  kyb_hesablama, kyb_azalma, kyb_net, kyb_status, has_kyb,
+  syb_hesablama, syb_azalma, syb_net, syb_status, has_syb,
+  total_hesablama, total_azalma, total_net,
+  decl_count,                   // unique declarations filed by client
+}
+```
+
+---
+
+## MV Module — Key Details
+
+### MV_LABELS Golden Rule
+**The PDF declaration is the single source of truth.**  
+If a line appears in Gəlirlər in the PDF → it belongs in the Gəlirlər section in code.  
+Never place a code based on its XML tag. Always verify against the PDF.
+
+### Critical Corrections (do not revert)
+
+| XML code | Wrong beyCode | Correct beyCode | Reason |
+|---|---|---|---|
+| `1021` | `300` | `206` | Revenue item, not expense |
+| `1034` | `310` | `212` | Revenue (interest income) |
+| `1041` | `320` | `218` | ÜMUMİ GƏLİRLƏR |
+| `3001` | `39`  | `237` | Tax calculation section |
+| `3004` | `240` | `240` | sat.240=0 in sample; code kept at 240 |
+| `4017` | `1`   | `1.5` | Pul vəsaitləri, not Cəmi aktivlər |
+| `4022` | `2`   | `1.10`| Digər aktivlər, not Kapital |
+| `bagliHarc` codes | balance sheet | sat.221–236 | bagliHarc = expense details |
+
+### Adding or Fixing a Code
+```
+1. Find XML <gosterici> code and its <mebleg> value in the XML file
 2. Find the same amount in the PDF declaration
 3. Note PDF line number → beyCode
 4. Note PDF section → determines which section array
-5. Add to MV_LABELS AND correct section in both:
-   - const sections = [...] in XmlRenderer.render()
-   - const simpleSecs = [...] in XmlExporter.download()
+5. Update MV_LABELS in modules/mv/labels.js
+6. Update sections array in modules/mv/renderer.js (SECTIONS constant)
+7. Update simpleSecs array in modules/mv/exporter.js
 ```
 
-### PDF Structure → Section Arrays (verified 2025-04-09)
-
-| PDF lines | Section title | XML codes |
-|---|---|---|
-| 200–220 | Gəlirlər (sat.200–220) | `1001,1002,1012,1013,1016,1021,1034,1006,1041,1042,1045,1056` |
-| 221–236 | Xərclər (sat.221–236) | `2001,2002,2003,2004,2005,2007,2008,1200,2009,2011,2012,2014,2016,2018,2019,2020,2021,2022,2023,2027,2031,2033,2034,2039,2140,2040,2043,2049,2050,2052,2053,2057,2063,2064,2066,2071,2073` |
-| 237+ | Verginin hesablanması (sat.237+) | `3001,3002,3003,3004,1022,1023,1076` |
-| Əlavə 1 aktivlər | Asset movement table | see Aktivlər map below |
-| Əlavə 1 kapital | Capital/liabilities table | see Kapital map below |
-
-### Key Insight: bagliHarc ≠ Balance Sheet
-`bagliHarc` XML tag holds **expense details (sat.221–236)**, not balance sheet items.  
-Codes `2001–2073` ALL belong to the Xərclər section.
-
----
-
-## Aktivlər (Əlavə 1) — Full Map (verified vs PDF screenshots)
-
-| XML code | beyCode | Label |
-|---|---|---|
-| `4001` | `1` | Cəmi aktivlər |
-| `4002` | `1.1` | Əsas vəsaitlərin dəyəri |
-| `4003` | `1.1.1` | Torpaqların yaxşılaşdırılması üzrə kapitallaşdırılmış xərclər, binalar, tikililər və qurğular |
-| `4007` | `1.1.5` | Digər əsas vəsaitlər |
-| `4045` | `1.1.6` | Yüksək texnologiyalar məhsulu olan hesablama texnikası |
-| `4008` | `1.2` | Qeyri-maddi aktivlərin dəyəri |
-| `4050` | `1.2.1` | İstifadə müddəti məlum olmayan qeyri-maddi aktivlərin dəyəri |
-| `4040` | `1.3` | Ehtiyatlar |
-| `4041` | `1.3.1` | Hazır məhsul |
-| `4005` | `1.3.2` | Mallar |
-| `4042` | `1.3.3` | Bitməmiş istehsalat |
-| `4043` | `1.3.4` | Sair ehtiyatlar |
-| `4014` | `1.4` | Debitor borcları |
-| `4015` | `1.4.1` | Dövlət büdcəsinə (vergilər üzrə) debitor borcu |
-| `4016` | `1.4.2` | Sair debitor borcları |
-| `4017` | `1.5` | Pul vəsaitləri |
-| `4022` | `1.10` | Digər aktivlər |
-| Others | `—` | Not yet mapped (all zero in this sample) |
-
-**Previously wrong (do not revert):**
-- `4017` was `1` (Cəmi aktivlər) → correct is `1.5` (Pul vəsaitləri)
-- `4022` was `2` (Kapital) → correct is `1.10` (Digər aktivlər)
-- `4047,4048,4051,4053,4054` etc — had wrong beyCode, now `—` until confirmed
-
----
-
-## Kapital & Öhdəliklər (Əlavə 1) — Full Map (verified vs PDF screenshots)
-
-| XML code | beyCode | Label |
-|---|---|---|
-| `4023` | `2` | Cəmi kapital və öhdəliklər |
-| `5001` | `2.1` | Cəmi kapital |
-| `4024` | `2.1.1` | Nizamnamə kapitalı |
-| `4025` | `2.1.2` | Hesabat dövrünün xalis mənfəəti |
-| `4026` | `2.1.3` | Əvvəlki illər üzrə bölüşdürülməmiş mənfəət |
-| `7001` | `2.1.4` | Emissiya gəliri |
-| `7002` | `2.1.5` | Kapital ehtiyatları |
-| `6001` | `2.2` | Cəmi öhdəliklər |
-| `4027` | `2.2.1` | Kreditor borcları |
-| `4028` | `2.2.1.1` | Bank kreditləri |
-| `4029` | `2.2.1.1.1` | O cümlədən xarici borclar |
-| `4031` | `2.2.1.2` | Alınmış avanslar |
-| `4052` | `2.2.1.5` | Sair kreditor borcları |
-| `4032` | `2.2.1.5.1` | O cümlədən xarici borclar (sair) |
-| `4034` | `2.2.3` | Digər öhdəliklər |
-| Others | `—` | Not yet mapped |
-
----
-
-## Critical Corrections — DO NOT REVERT (all verified vs PDF)
-
-| XML code | Wrong old beyCode | Correct beyCode | Note |
-|---|---|---|---|
-| `1021` | `300` | `206` | Revenue, not expense |
-| `1034` | `310` | `212` | Revenue (interest income) |
-| `1006` | `315` | `212.2` | Revenue (other interest) |
-| `1041` | `320` | `218` | ÜMUMİ GƏLİRLƏR |
-| `1042` | `321` | `219` | Deductions from revenue |
-| `1045` | `323` | `219.3` | FX rate difference |
-| `1056` | `330` | `220` | Net revenue after deductions |
-| `3001` | `39` | `237` | Tax calculation |
-| `3004` | `240` | `241` | PDF sat.240=0, sat.241=43488.43 |
-| `2001–2073` | balance sheet | `221–236` | bagliHarc = expenses, not balance |
-| `4017` | `1` Cəmi aktivlər | `1.5` Pul vəsaitləri | Aktivlər map fixed |
-| `4022` | `2` Kapital | `1.10` Digər aktivlər | Aktivlər map fixed |
-
 ### Duplicate beyCode Issue
-Some XML codes share the same PDF beyCode. Resolution: secondary one gets suffix `b`/`*` and excluded from sections array.  
-Excluded from sections (duplicates, all zero): `2062`, `1031`, `1102`, `1106`.
+Some XML codes share the same PDF beyCode. Secondary ones get suffix `b`/`*` and are excluded from sections.  
+Excluded from sections (duplicates, all zero in known samples): `2062`, `1031`, `1102`, `1106`.
 
-### Summary Chips → XML codes
+### Summary Chips → XML Codes
 
 | Chip | XML code | PDF line |
 |---|---|---|
-| Ümumi gəlir | `1041` | sat.218 ÜMUMİ GƏLİRLƏR |
-| Cəmi xərclər | `2071` | sat.234 CƏMİ XƏRCLƏR |
+| Cəmi gəlir | `1001` | sat.200 |
+| Cəmi xərclər | `1041` | sat.218 ÜMUMİ GƏLİRLƏR |
 | Vergitutma mənfəəti | `3001` | sat.237 |
 | Büdcəyə ödənilməli | `budce` (root XML field) | sat.243 |
 | Ümidsiz borc | `umidsizBorc` (root XML field) | Əlavə 3 |
 
-### KEY_CODES (highlighted in XLSX)
-`1041` (218), `1056` (220), `2071` (234), `3001` (237), `3004` (241)
+---
+
+## ƏDV Module — Key Details
+
+- Accepts **multiple XML files** — one per month, deduplicates by `(ay, yil)`
+- 4 sections: Hissə 1 (sat.301–305), Hissə 2 (sat.308–317), Hissə 3 (Debitor borc), Hissə 4 (Hesablaşma)
+- File encoding: UTF-8 (unlike SHV which uses ISO-8859-1)
 
 ---
 
-## XLS Module Key Details
+## Core Utilities
 
-### Column Detection (always dynamic)
+### core/ui.js
 ```js
-let amountIdx = headers.findIndex(h => h.includes('Miqdar') && h.includes('Manat'));
-if (amountIdx === -1) amountIdx = 4;
+switchTab(id)    // hide all tabs, show selected, toggle active class
+fmt(n)           // number → colored HTML span (num-pos / num-neg / num-zero)
+fmtRaw(n)        // number → plain string "1,234.56"
+esc(s)           // HTML-escape to prevent XSS
 ```
 
-### KYB / SYB
+### core/xlsx.js
 ```js
-const isKyb  = opName.includes('KYB');
-const isKybl = opName.includes('KYBL');  // → kyb_azalma
-const isSyb  = opName.includes('SYB') && !isKyb;
+xFill(hex)           // solid fill from 6-char hex
+xFont(hex, bold, sz) // font descriptor
+xBorderAll()         // thin border on all 4 sides
+xBorderBottom(style, hex)  // bottom border only
+NUM_FMT              // '#,##0.00;[Red]-#,##0.00;"-"'
+NUM_FMT_INT          // '#,##0;[Red]-#,##0;"-"'
+saveWorkbook(wb, filename)  // write buffer + trigger download
 ```
-
-### decl_count
-Pattern: `/CARİ\(B\)|DƏQİQLƏŞMİŞ\(B\)|DƏQİQLƏŞDİRİLMİŞ\(B\)/`  
-Excluded: `CARİ(ARAYIŞ)`, `/N` rows, VAHID MUZDLU deduped via `vahidDates` Set.
-
-### extractTaxKey Priority
-`Ödəmə tapşırığı/Sərəncam`→Diger | `ƏDVQR YYYY/MM` | `ƏDV YYYY/MM` | `ÖMV YYYY N.Rüb` | `VAHID MUZDLU YYYY N.Rüb` | `ƏV - N.Rüb YYYY`→HŞƏV | `HŞƏV YYYY` | `MV` (not ÖMV) | fallback | Diger
-
----
-
-## Quick Section Reference
-
-| What to change | Location |
-|---|---|
-| XML code labels | `const MV_LABELS = {...}` in Section 10 |
-| XML display sections | `const sections = [...]` in `XmlRenderer.render()` |
-| XML XLSX sections | `const simpleSecs = [...]` in `XmlExporter.download()` |
-| KYB/SYB/parsing | Section 3 — Parser |
-| XLS XLSX export | Section 5 — XlsxExport |
-| Tab styles | `.tab-btn` in `<style>` |
 
 ---
 
@@ -206,14 +234,21 @@ Excluded: `CARİ(ARAYIŞ)`, `/N` rows, VAHID MUZDLU deduped via `vahidDates` Set
 
 | Issue | Resolution |
 |---|---|
-| Extra `Miqdar (ABŞ$)` column | Dynamic `findIndex` |
-| `/N` rows counted as declarations | `isSlashRow = /\/\s*\d+\s*$/.test(opName)` |
-| `ƏV` avans → HŞƏV | Key `HŞƏV - YYYY` |
-| KYBL → kyb_azalma | Explicit check before opType |
-| VAHID MUZDLU 3 rows = 1 decl | `vahidDates` Set |
-| `bagliHarc` = balance sheet | Wrong — it's expenses sat.221–236 |
-| `1034`, `1021` in wrong section | Fixed: revenue items sat.212, sat.206 |
-| `3004` mapped to sat.240 | Fixed: sat.240=0, `3004`→sat.241 |
-| Duplicate beyCode (231, 230, 222) | Secondary codes get `b`/`*` suffix, excluded from sections |
-| Aktivlər codes all had wrong beyCode | Fixed 2025-04-09: `4001–4050` remapped vs PDF screenshots |
-| Many aktivlər codes show `—` | Not yet confirmed vs PDF — zero in current sample, update when non-zero appears |
+| Extra `Miqdar (ABŞ$)` column in some XLS exports | Dynamic `findIndex` for `Miqdar (Manat)` |
+| `/N` rows (avans auto-corrections) counted as declarations | `isSlashRow = /\/\s*\d+\s*$/.test(opName)` — these are skipped |
+| `ƏV` quarterly avans rows → should group with HŞƏV | Key normalized to `HŞƏV - YYYY` |
+| KYBL rows → should reduce KYB, not client balance | Explicit `isKybl` check before `opType` branch |
+| VAHID MUZDLU: portal emits 3 rows per quarter | `vahidDates` Set deduplicates by `date|declType` |
+| MV `bagliHarc` XML tag confused with balance sheet | It holds expense details (sat.221–236) — all `2001–2073` codes are expenses |
+| Aktivlər codes had wrong beyCode mapping | Fixed 2025-04-09: full remap vs PDF screenshots |
+| ES Modules don't work via `file://` (double-click) | Use GitHub Pages or any HTTP server — not an issue for production |
+
+---
+
+## Typical Workflow with Claude
+
+1. Paste this README at the start of the conversation
+2. Upload the current `index.html` **or** reference the GitHub URL
+3. Reference file and function by name: "fix `extractTaxKey` in `modules/shv/parser.js`"
+4. Claude reads only the relevant file, makes a targeted change
+5. Download the changed file, upload to GitHub
