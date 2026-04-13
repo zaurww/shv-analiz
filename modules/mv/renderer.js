@@ -1,22 +1,19 @@
 // modules/mv/renderer.js
 // Responsibility: MV declaration data → DOM HTML
+// Uses PDF_STRUCTURE from labels.js as single source of truth (mirrors exporter)
 
 import { fmt, esc } from '../../core/ui.js';
-import { mvInfo }   from './labels.js';
-
-const SECTIONS = [
-  { title: '💰 Gəlirlər',                     codes: ['1001','1002','1012','1013','1016'] },
-  { title: '📉 Xərclər',                       codes: ['1021','1022','1023','1102','1106','1031','1034','1006','1041','1042','1045','1056','1076'] },
-  { title: '🧾 Vergi hesabı (hesabat dövrü)',  codes: ['3001','3002','3003','3004'] },
-  { title: '🏦 Balans — Aktivlər',             codes: ['2001','2002','2003','2004','2005','2007','2008','1200','2009','2011','2012','2014','2016','2018','2019'] },
-  { title: '📋 Balans — Öhdəliklər & Kapital', codes: ['2020','2021','2022','2023','2027','2031','2033','2034','2039','2140','2040','2043','2049','2050','2052','2053','2057','2062'] },
-  { title: '🔄 Gəlir/Xərc dövriyyəsi',        codes: ['2063','2064','2066','2071','2073'] },
-];
+import { mvInfo, PDF_STRUCTURE } from './labels.js';
 
 function fmtN(n) {
+  if (n === null || n === undefined) return '<span class="num-zero">—</span>';
   if (n === 0) return '<span class="num-zero">—</span>';
   const f = Math.abs(n).toLocaleString('az-AZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   return n < 0 ? `<span class="num-neg">${f}</span>` : `<span class="num-pos">${f}</span>`;
+}
+
+function gelirFmt(n) {
+  return n.toLocaleString('az-AZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 export function render(data) {
@@ -25,7 +22,6 @@ export function render(data) {
   el.style.display = 'block';
   el.innerHTML = buildHTML(data);
 
-  // Wire buttons after render
   el.querySelector('#mv-xlsx-btn')?.addEventListener('click', async () => {
     const btn = el.querySelector('#mv-xlsx-btn');
     btn.innerHTML = '⏳ Hazırlanır...'; btn.disabled = true;
@@ -46,9 +42,10 @@ export function reset() {
 }
 
 function buildHTML(data) {
-  const gelir = data.allData['1001']?.mebleg || 0;
-  const xrc   = data.allData['1041']?.mebleg || 0;
-  const mv    = data.allData['1042']?.mebleg || 0;
+  const gelir  = data.allData['1041']?.mebleg || 0;
+  const xrc    = data.allData['2071']?.mebleg || 0;
+  const mv     = data.allData['3004']?.mebleg || 0;
+  const budce  = data.budce || 0;
 
   const aktivKeys = Object.keys(data.allData).filter(k => k.startsWith('A_')).sort();
   const kapKeys   = Object.keys(data.allData).filter(k => k.startsWith('K_')).sort();
@@ -64,59 +61,113 @@ function buildHTML(data) {
         <div style="margin-top:2px">Bəyannamə: ${esc(data.beyannameTipi)}</div>
       </div>
     </div>
-    <div class="summary-row">
-      <div class="chip"><div class="chip-label">Büdcəyə ödənilməli</div><div class="chip-value ${data.budce > 0 ? 'danger' : 'ok'}">${gelirFmt(data.budce)} ₼</div></div>
-      <div class="chip"><div class="chip-label">Cəmi gəlir</div><div class="chip-value ok">${gelirFmt(gelir)} ₼</div></div>
-      <div class="chip"><div class="chip-label">Cəmi xərclər</div><div class="chip-value">${gelirFmt(xrc)} ₼</div></div>
-      <div class="chip"><div class="chip-label">Vergiyə cəlb olunan mənfəət</div><div class="chip-value ${mv > 0 ? 'ok' : 'danger'}">${gelirFmt(mv)} ₼</div></div>
-      <div class="chip"><div class="chip-label">Ümidsiz borc</div><div class="chip-value ${data.umidsizBorc > 0 ? 'danger' : 'ok'}">${gelirFmt(data.umidsizBorc)} ₼</div></div>
-    </div>`;
 
-  for (const sec of SECTIONS) {
-    const tbl = simpleTable(sec.codes, data);
-    if (tbl) html += `<div class="section-title">${sec.title}</div>${tbl}`;
-  }
+    <div class="summary-row">
+      <div class="chip">
+        <div class="chip-label">Büdcəyə ödənilməli</div>
+        <div class="chip-value ${budce > 0 ? 'danger' : 'ok'}">${gelirFmt(budce)} ₼</div>
+      </div>
+      <div class="chip">
+        <div class="chip-label">Ümumi gəlirlər</div>
+        <div class="chip-value ok">${gelirFmt(gelir)} ₼</div>
+      </div>
+      <div class="chip">
+        <div class="chip-label">Cəmi xərclər</div>
+        <div class="chip-value">${gelirFmt(xrc)} ₼</div>
+      </div>
+      <div class="chip">
+        <div class="chip-label">Vergiyə cəlb olunan mənfəət</div>
+        <div class="chip-value ${mv > 0 ? 'ok' : 'danger'}">${gelirFmt(mv)} ₼</div>
+      </div>
+      <div class="chip">
+        <div class="chip-label">Ümidsiz borc</div>
+        <div class="chip-value ${data.umidsizBorc > 0 ? 'danger' : 'ok'}">${gelirFmt(data.umidsizBorc || 0)} ₼</div>
+      </div>
+    </div>
+
+    ${buildPdfTable(data)}
+  `;
+
   if (aktivKeys.length) html += `<div class="section-title">📦 Aktivlər (Əlavə 1)</div>${aktivTable(aktivKeys, data)}`;
   if (kapKeys.length)   html += `<div class="section-title">🏛️ Kapital & Öhdəliklər (Əlavə 1)</div>${kapTable(kapKeys, data)}`;
 
-  html += `<div class="action-row">
-    <button class="btn btn-primary" id="mv-xlsx-btn">⬇ XLSX yüklə</button>
-    <button class="btn btn-secondary" id="mv-reset-btn">↩ Yeni XML</button>
-  </div>`;
+  html += `
+    <div class="action-row">
+      <button class="btn btn-primary" id="mv-xlsx-btn">⬇ XLSX yüklə</button>
+      <button class="btn btn-secondary" id="mv-reset-btn">↩ Yeni XML</button>
+    </div>`;
 
   return html;
 }
 
-function gelirFmt(n) {
-  return n.toLocaleString('az-AZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+// ── PDF_STRUCTURE → HTML table (mirrors exporter Sheet 1) ─────────
+function buildPdfTable(data) {
+  // Section emoji map
+  const SECTION_ICONS = {
+    'GƏLİR': '💰',
+    'XƏRC': '📉',
+    'vergi': '🧾',
+  };
+
+  function sectionIcon(label) {
+    if (label.includes('GƏLİR')) return '💰';
+    if (label.includes('XƏRC') || label.includes('xərc')) return '📉';
+    return '🧾';
+  }
+
+  const INDENT_PX = 14; // px per indent level
+
+  let out = '';
+  let inSection = false;
+  let tableOpen = false;
+
+  const closeTable = () => {
+    if (tableOpen) { out += '</tbody></table></div>'; tableOpen = false; }
+  };
+
+  for (const row of PDF_STRUCTURE) {
+    if (row.type === 'H') {
+      closeTable();
+      const icon = sectionIcon(row.label);
+      out += `<div class="section-title">${icon} ${esc(row.label)}</div>`;
+      out += `<div class="table-wrap"><table>
+        <thead><tr>
+          <th style="text-align:center;width:90px">Bəy. kodu</th>
+          <th style="text-align:center;width:80px">XML kodu</th>
+          <th style="text-align:left">Göstərici adı</th>
+          <th style="width:150px">Məbləğ (₼)</th>
+        </tr></thead>
+        <tbody>`;
+      tableOpen = true;
+      continue;
+    }
+
+    // L or T line
+    const isTotal = row.type === 'T';
+    const pad     = row.lvl ? `padding-left:${row.lvl * INDENT_PX + 4}px` : 'padding-left:4px';
+    const xmlCode = row.xml || '';
+    const val     = row.xml ? (data.allData[row.xml]?.mebleg ?? null) : null;
+    const hasVal  = val !== null && val !== 0;
+
+    // Row background: total lines get accent bg, odd/even for data lines
+    const rowClass = isTotal ? 'style="background:var(--bg3)"' : '';
+    const labelStyle = isTotal
+      ? 'font-weight:700;color:var(--text)'
+      : (hasVal ? 'color:var(--text)' : 'color:var(--muted)');
+
+    out += `<tr ${rowClass}>
+      <td style="text-align:center;font-family:var(--mono);font-size:11px;color:var(--accent);font-weight:${isTotal?'700':'400'}">${esc(row.bey)}</td>
+      <td style="text-align:center;font-family:var(--mono);font-size:11px;color:var(--muted)">${esc(xmlCode)}</td>
+      <td style="${pad};${labelStyle};font-size:${isTotal?'13':'12'}px">${esc(row.label)}</td>
+      <td style="font-weight:${isTotal?'700':'400'}">${fmtN(val)}</td>
+    </tr>`;
+  }
+
+  closeTable();
+  return out;
 }
 
-function simpleTable(codes, data) {
-  const rows = codes
-    .filter(c => data.allData[c]?.mebleg !== undefined)
-    .map(c => {
-      const v    = data.allData[c].mebleg;
-      const info = mvInfo(c);
-      const bold = ['1041','1056','3001','3003','2071'].includes(c) ? 'style="font-weight:700"' : '';
-      return `<tr ${bold}>
-        <td style="text-align:center;font-family:var(--mono);font-size:11px;color:var(--accent)">${esc(info.beyCode)}</td>
-        <td style="text-align:center;font-family:var(--mono);font-size:11px;color:var(--muted)">${c}</td>
-        <td style="text-align:left">${esc(info.label)}</td>
-        <td>${fmtN(v)}</td>
-      </tr>`;
-    });
-  if (!rows.length) return '';
-  return `<div class="table-wrap"><table>
-    <thead><tr>
-      <th style="text-align:center">Bəy. kodu</th>
-      <th style="text-align:center">XML kodu</th>
-      <th style="text-align:left">Göstərici adı</th>
-      <th>Məbləğ (₼)</th>
-    </tr></thead>
-    <tbody>${rows.join('')}</tbody>
-  </table></div>`;
-}
-
+// ── Aktivlər table ─────────────────────────────────────────────────
 function aktivTable(keys, data) {
   const rows = keys.map(k => {
     const kod  = k.slice(2);
@@ -124,7 +175,7 @@ function aktivTable(keys, data) {
     const info = mvInfo(kod);
     return `<tr>
       <td style="text-align:center;font-family:var(--mono);font-size:11px;color:var(--accent)">${esc(info.beyCode)}</td>
-      <td style="text-align:center;font-family:var(--mono);font-size:11px;color:var(--muted)">${kod}</td>
+      <td style="text-align:center;font-family:var(--mono);font-size:11px;color:var(--muted)">${esc(kod)}</td>
       <td style="text-align:left">${esc(info.label)}</td>
       <td>${fmtN(d.evvel)}</td><td>${fmtN(d.dahil)}</td><td>${fmtN(d.takdim)}</td><td>${fmtN(d.son)}</td>
     </tr>`;
@@ -140,6 +191,7 @@ function aktivTable(keys, data) {
   </table></div>`;
 }
 
+// ── Kapital & Öhdəliklər table ─────────────────────────────────────
 function kapTable(keys, data) {
   const rows = keys.map(k => {
     const kod  = k.slice(2);
@@ -147,7 +199,7 @@ function kapTable(keys, data) {
     const info = mvInfo(kod);
     return `<tr>
       <td style="text-align:center;font-family:var(--mono);font-size:11px;color:var(--accent)">${esc(info.beyCode)}</td>
-      <td style="text-align:center;font-family:var(--mono);font-size:11px;color:var(--muted)">${kod}</td>
+      <td style="text-align:center;font-family:var(--mono);font-size:11px;color:var(--muted)">${esc(kod)}</td>
       <td style="text-align:left">${esc(info.label)}</td>
       <td>${fmtN(d.evvel)}</td><td>${fmtN(d.dahil)}</td><td>${fmtN(d.takdim)}</td><td>${fmtN(d.silen || 0)}</td><td>${fmtN(d.son)}</td>
     </tr>`;
