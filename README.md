@@ -11,13 +11,14 @@ Tax analysis toolkit for Azerbaijan. Runs entirely in the browser — no backend
 
 ---
 
-## Three Modules
+## Four Modules
 
 | Tab | Input | What it does |
 |---|---|---|
 | 📋 Şəxsi Hesab | `.xls` from tax portal | Parses personal tax account statement → analysis table with KYB/SYB detection → XLSX (2 sheets) |
 | 📄 MV Bəyannaməsi | `.xml` from e-taxes portal | Parses profit tax declaration → all indicators with PDF line codes → XLSX (3 sheets) |
 | 📊 ƏDV Bəyannaməsi | multiple `.xml` files | Parses VAT declarations → monthly report across 4 sections → XLSX |
+| 🧾 E-Qaimə | two `.xlsx` files (gələn + göndərilən) | Parses detailed e-invoice exports → ƏDV balance, monthly trend, top suppliers/customers, item structure, risk flags → XLSX (6 sheets) |
 
 ---
 
@@ -27,7 +28,7 @@ Tax analysis toolkit for Azerbaijan. Runs entirely in the browser — no backend
 index.html              ← Shell: header, tab buttons, tab panels, bootstrap script
 core/
   styles.css            ← All shared CSS (variables, layout, tables, badges, buttons)
-  ui.js                 ← switchTab(), fmt(), fmtRaw(), esc()
+  ui.js                 ← switchTab(), fmt(), fmtRaw(), esc()  [TABS: shv, mv, edv, eqaime]
   xlsx.js               ← Shared ExcelJS helpers: xFill, xFont, xBorderAll, saveWorkbook
 modules/
   shv/
@@ -46,6 +47,11 @@ modules/
     renderer.js         ← Array of monthly data → DOM HTML (4 sections)
     exporter.js         ← Monthly data array → XLSX (1 sheet, 4 sections)
     index.js            ← Wires multi-file drop, deduplication, generate button
+  eqaime/
+    parser.js           ← XLSX rows → gelir/gonder data objects + risk flags
+    renderer.js         ← Data → DOM HTML (ƏDV balance, monthly, suppliers, customers, items)
+    exporter.js         ← Data → XLSX (6 sheets)
+    index.js            ← Wires two drop zones (gelir + gonder) → parse → render
 ```
 
 ---
@@ -73,7 +79,7 @@ That's it — no other files need to change.
 
 ### parser.js
 Every parser exports a single `parse(input)` function.  
-Input types: `string` (HTML or XML text).  
+Input types: `string` (HTML or XML text) or pre-parsed row array (XLSX via SheetJS).  
 Returns a plain JS object — the "data object" passed to renderer and exporter.
 
 ### renderer.js
@@ -207,6 +213,82 @@ Excluded from sections (duplicates, all zero in known samples): `2062`, `1031`, 
 
 ---
 
+## E-Qaimə Module — Key Details
+
+### Input Files
+Two separate XLSX exports from the e-taxes portal:
+- **Detallı gələn e-qaimələr** — received invoices (purchases)
+- **Detallı göndərilən e-qaimələr** — sent invoices (sales)
+
+Both are optional — module works with just one if needed.
+
+### Column Detection
+Column names vary between portal versions. `buildGelirKeyMap` / `buildGonderKeyMap` use regex patterns to find columns dynamically:
+```js
+findKey(keys, [/göndər.*ad|gonderan/i])  // supplier name
+findKey(keys, [/ümumi/i])                // total amount
+findKey(keys, [/ƏDV məbləği/i])          // VAT amount
+```
+
+### Passive Invoice Filtering
+Rows with `status` matching `/passiv/i` are excluded from all aggregations (counted separately as `passivCount`/`passivTotal`).
+
+### EqaimeData Object Shape
+```js
+// parseGelir() returns:
+{
+  total, edv,
+  edv18, edv0, edvAzad, aksiz, yolV,  // VAT structure breakdown
+  invoices,        // unique seriya count (active only)
+  passivCount, passivTotal,
+  pendingCount,    // /gözləyi|pending/i rows
+  suppliers,       // { name → { total, edv, inv:Set, pending, voen } }
+  monthly,         // { 'YYYY-MM' → { total, edv, inv:Set } }
+  items,           // { mal adı → { total, qty, count } }
+  kodGroups,       // { first4ofTNVED → { total, count, samples[] } }
+  statuses,        // { status string → count }
+}
+
+// parseGonder() returns:
+{
+  total, edv,
+  invoices, passivCount, passivTotal,
+  customers,  // { name → { total, edv, inv:Set, voen } }
+  monthly, items, statuses,
+}
+```
+
+### Risk Flags (computeRisks)
+Automatically generated from parsed data:
+
+| Condition | Level | Flag |
+|---|---|---|
+| Top supplier > 50% of expenses | 🔴 red | Concentration risk |
+| Top supplier > 30% of expenses | 🟡 yellow | Concentration warning |
+| Top customer > 50% of revenue | 🔴 red | Customer dependency |
+| Top customer > 30% of revenue | 🟡 yellow | Customer warning |
+| pendingCount > 0 | 🟡 yellow | VAT credit risk |
+| Gross margin < 0 | 🔴 red | Negative margin |
+| Gross margin < 5% | 🟡 yellow | Low margin |
+| edv0 > 50% of VAT base | 🟢 green | Limited VAT credit opportunity |
+| ƏDV balance < -5000 | 🟢 green | Potential VAT refund |
+
+### XLSX Export — 6 Sheets
+| Sheet | Content |
+|---|---|
+| Xülasə | Key metrics: revenue, expenses, margin, VAT balance, VAT structure |
+| Aylıq Dinamika | Month-by-month: revenue, expenses, margin, VAT öhdəlik/kredit, invoice counts |
+| Top Təchizatçılar | All suppliers sorted by amount, with VÖEN and pending flag |
+| Top Alıcılar | All customers sorted by amount, with VÖEN |
+| Gələn — Mal-Xidmət | All items from received invoices sorted by amount |
+| Göndərilən — Mal-Xidmət | All items from sent invoices sorted by amount |
+
+### External Dependencies
+SheetJS (`xlsx.full.min.js`) added to `index.html` for reading `.xlsx` input files.  
+ExcelJS (already present) used for writing the export.
+
+---
+
 ## Core Utilities
 
 ### core/ui.js
@@ -238,10 +320,11 @@ saveWorkbook(wb, filename)  // write buffer + trigger download
 | `/N` rows (avans auto-corrections) counted as declarations | `isSlashRow = /\/\s*\d+\s*$/.test(opName)` — these are skipped |
 | `ƏV` quarterly avans rows → should group with HŞƏV | Key normalized to `HŞƏV - YYYY` |
 | KYBL rows → should reduce KYB, not client balance | Explicit `isKybl` check before `opType` branch |
-| VAHID MUZDLU: portal emits 3 rows per quarter | `vahidDates` Set deduplicates by `date|declType` |
+| VAHID MUZDLU: portal emits 3 rows per quarter | `vahidDates` Set deduplicates by `date\|declType` |
 | MV `bagliHarc` XML tag confused with balance sheet | It holds expense details (sat.221–236) — all `2001–2073` codes are expenses |
 | Aktivlər codes had wrong beyCode mapping | Fixed 2025-04-09: full remap vs PDF screenshots |
 | ES Modules don't work via `file://` (double-click) | Use GitHub Pages or any HTTP server — not an issue for production |
+| E-qaimə column names vary between portal versions | Dynamic `findKey()` with regex patterns in `buildGelirKeyMap` / `buildGonderKeyMap` |
 
 ---
 

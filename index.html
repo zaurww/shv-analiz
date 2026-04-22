@@ -6,7 +6,56 @@
 <title>Vergi Analizatoru</title>
 <!-- ExcelJS loaded as global so all modules can use window.ExcelJS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+<!-- SheetJS for XLSX reading (e-qaimə tab) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <link rel="stylesheet" href="core/styles.css">
+<style>
+  /* ── E-Qaimə drop zone pair ── */
+  .eqaime-drop-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    width: 100%;
+    max-width: 640px;
+  }
+  .eqaime-drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 28px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--bg2);
+    box-shadow: var(--shadow-sm);
+    position: relative;
+  }
+  .eqaime-drop-zone input[type=file] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  .eqaime-drop-zone:hover, .eqaime-drop-zone.drag-over {
+    border-color: var(--accent);
+    background: #f0f5ff;
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.08);
+  }
+  .eqaime-drop-zone.loaded {
+    border-color: var(--green);
+    border-style: solid;
+    background: var(--green-bg);
+  }
+  .eqaime-dz-icon { font-size: 28px; margin-bottom: 8px; }
+  .eqaime-dz-type {
+    font-family: var(--mono); font-size: 11px; font-weight: 600;
+    letter-spacing: 0.06em; margin-bottom: 4px; text-transform: uppercase;
+  }
+  .eqaime-dz-type.gelir  { color: var(--accent); }
+  .eqaime-dz-type.gonder { color: var(--green);  }
+  .eqaime-dz-hint { font-size: 12px; color: var(--muted); }
+  .eqaime-filename { font-size: 11px; color: var(--green); font-weight: 500; margin-top: 6px; word-break: break-all; min-height: 16px; }
+  .eqaime-actions {
+    display: flex; gap: 10px; flex-wrap: wrap;
+    max-width: 640px; width: 100%; margin-top: 4px;
+  }
+</style>
 </head>
 <body>
 
@@ -22,12 +71,13 @@
   <div class="header-icon">📊</div>
   <div>
     <h1>VERGİ ANALİZATORU</h1>
-    <p>Şəxsi hesab · MV bəyannaməsi · ƏDV bəyannaməsi</p>
+    <p>Şəxsi hesab · MV bəyannaməsi · ƏDV bəyannaməsi · E-Qaimə</p>
   </div>
   <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;">
-    <button class="tab-btn active" id="tab-btn-shv" onclick="switchTab('shv')">📋 Şəxsi Hesab</button>
-    <button class="tab-btn"        id="tab-btn-mv"  onclick="switchTab('mv')">📄 MV Bəyannaməsi</button>
-    <button class="tab-btn"        id="tab-btn-edv" onclick="switchTab('edv')">📊 ƏDV Bəyannaməsi</button>
+    <button class="tab-btn active" id="tab-btn-shv"    onclick="switchTab('shv')">📋 Şəxsi Hesab</button>
+    <button class="tab-btn"        id="tab-btn-mv"     onclick="switchTab('mv')">📄 MV Bəyannaməsi</button>
+    <button class="tab-btn"        id="tab-btn-edv"    onclick="switchTab('edv')">📊 ƏDV Bəyannaməsi</button>
+    <button class="tab-btn"        id="tab-btn-eqaime" onclick="switchTab('eqaime')">🧾 E-Qaimə</button>
   </div>
 </div>
 
@@ -89,23 +139,55 @@
   <div class="results-area" id="edv-results"></div>
 </div>
 
+<!-- ═══════════ TAB: E-Qaimə ═══════════ -->
+<div id="tab-eqaime" style="display:none;">
+  <div class="drop-section" id="eqaime-drop-section">
+
+    <div class="eqaime-drop-grid">
+      <!-- Gələn -->
+      <div class="eqaime-drop-zone" id="eqaime-drop-gelir">
+        <input type="file" id="eqaime-input-gelir" accept=".xlsx,.xls">
+        <div class="eqaime-dz-icon">📥</div>
+        <div class="eqaime-dz-type gelir">Gələn E-Qaimələr</div>
+        <div class="eqaime-dz-hint">Detallı gələnlər (.xlsx)</div>
+        <div class="eqaime-filename" id="eqaime-name-gelir"></div>
+      </div>
+      <!-- Göndərilən -->
+      <div class="eqaime-drop-zone" id="eqaime-drop-gonder">
+        <input type="file" id="eqaime-input-gonder" accept=".xlsx,.xls">
+        <div class="eqaime-dz-icon">📤</div>
+        <div class="eqaime-dz-type gonder">Göndərilən E-Qaimələr</div>
+        <div class="eqaime-dz-hint">Detallı göndərilənlər (.xlsx)</div>
+        <div class="eqaime-filename" id="eqaime-name-gonder"></div>
+      </div>
+    </div>
+
+    <div class="eqaime-actions">
+      <button class="btn btn-primary"   id="eqaime-btn-generate" disabled>📋 Analiz et</button>
+      <button class="btn btn-secondary" id="eqaime-btn-clear">✕ Təmizlə</button>
+    </div>
+
+    <div class="error-box" id="eqaime-error"></div>
+  </div>
+  <div class="results-area" id="eqaime-results"></div>
+</div>
+
 <!-- ═══════════════════════════════════════════════════
      BOOTSTRAP
-     switchTab is exposed globally for onclick= attributes.
-     Each module init() wires its own drop zone and events.
 ════════════════════════════════════════════════════ -->
 <script type="module">
   import { switchTab } from './core/ui.js';
-  import { init as initShv } from './modules/shv/index.js';
-  import { init as initMv  } from './modules/mv/index.js';
-  import { init as initEdv } from './modules/edv/index.js';
+  import { init as initShv    } from './modules/shv/index.js';
+  import { init as initMv     } from './modules/mv/index.js';
+  import { init as initEdv    } from './modules/edv/index.js';
+  import { init as initEqaime } from './modules/eqaime/index.js';
 
-  // Expose switchTab globally so onclick="switchTab(...)" works in HTML
   window.switchTab = switchTab;
 
   initShv();
   initMv();
   initEdv();
+  initEqaime();
 </script>
 
 </body>

@@ -10,7 +10,7 @@
  *   2. Add its panel:  <div id="tab-newtab" class="tab-panel">...</div>
  *   3. Register it here in TABS array.
  */
-const TABS = ['shv', 'mv', 'edv'];
+const TABS = ['shv', 'mv', 'edv', 'eqaime'];
 
 export function switchTab(tab) {
   TABS.forEach(id => {
