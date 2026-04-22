@@ -177,15 +177,28 @@
 
 <!-- ═══════════════════════════════════════════════════
      BOOTSTRAP
+     switchTab must be defined in a plain <script> BEFORE the module
+     block. If any module import fails, the module block is skipped
+     entirely — keeping switchTab inline here ensures tab buttons
+     always work even if a module breaks.
 ════════════════════════════════════════════════════ -->
+<script>
+  function switchTab(tab) {
+    ['shv','mv','edv','eqaime'].forEach(function(id) {
+      var panel  = document.getElementById('tab-' + id);
+      var button = document.getElementById('tab-btn-' + id);
+      if (panel)  panel.style.display = id === tab ? 'block' : 'none';
+      if (button) button.classList.toggle('active', id === tab);
+    });
+  }
+  window.switchTab = switchTab;
+</script>
+
 <script type="module">
-  import { switchTab } from './core/ui.js';
   import { init as initShv    } from './modules/shv/index.js';
   import { init as initMv     } from './modules/mv/index.js';
   import { init as initEdv    } from './modules/edv/index.js';
   import { init as initEqaime } from './modules/eqaime/index.js';
-
-  window.switchTab = switchTab;
 
   initShv();
   initMv();

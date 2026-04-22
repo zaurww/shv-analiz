@@ -296,7 +296,7 @@ function parseMonth(v) {
   return String(v).trim().slice(0, 7);
 }
 
-
+function toNum(v) {
   if (v == null) return 0;
   if (typeof v === 'number') return v;
   return parseFloat(String(v).replace(/\./g, '').replace(',', '.')) || 0;
