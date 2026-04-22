@@ -31,15 +31,6 @@ export function reset() {
 
 // ── Main HTML builder ───────────────────────────────────────────────────────
 function buildHTML(gelir, gonder) {
-  const rev    = gonder?.total || 0;
-  const exp    = gelir?.total  || 0;
-  const margin = rev - exp;
-  const marginPct = rev > 0 ? margin / rev * 100 : 0;
-
-  const edvOhde  = gonder?.edv || 0;  // ƏDV hesablanmış (göndərilən)
-  const edvKredit= gelir?.edv  || 0;  // ƏDV ödənilmiş  (gələn)
-  const edvBal   = edvOhde - edvKredit;
-
   const allMonths = new Set([
     ...Object.keys(gelir?.monthly  || {}),
     ...Object.keys(gonder?.monthly || {}),
@@ -51,9 +42,8 @@ function buildHTML(gelir, gonder) {
 
   return `
     ${headerHTML(period, gelir, gonder)}
-    ${chipsHTML(rev, exp, margin, marginPct, edvBal, edvOhde, edvKredit, gelir, gonder)}
+    ${chipsHTML(gelir, gonder)}
     ${risksHTML(risks)}
-    ${edvCompareHTML(edvOhde, edvKredit, edvBal, gelir)}
     ${monthlyHTML(months, gelir, gonder)}
     ${gelir  ? suppliersHTML(gelir)  : ''}
     ${gonder ? customersHTML(gonder) : ''}
@@ -85,24 +75,27 @@ function headerHTML(period, gelir, gonder) {
 }
 
 // ── Summary chips ───────────────────────────────────────────────────────────
-function chipsHTML(rev, exp, margin, marginPct, edvBal, edvOhde, edvKredit, gelir, gonder) {
-  const marginCls = margin < 0 ? 'danger' : margin < exp * 0.05 ? 'warn' : 'ok';
-  const edvCls    = edvBal > 0 ? 'warn' : 'ok';
-
+function chipsHTML(gelir, gonder) {
   const chips = [
-    { label: 'Ümumi Gəlir (satış)', value: fmtAZN(rev),          cls: 'ok',    sub: gonder ? `${gonder.invoices} qaimə` : '' },
-    { label: 'Ümumi Xərc (alış)',   value: fmtAZN(exp),          cls: '',      sub: gelir  ? `${gelir.invoices} qaimə`  : '' },
-    { label: 'Brüt Marja',          value: fmtAZN(margin),       cls: marginCls, sub: `${marginPct.toFixed(1)}%` },
-    { label: 'ƏDV Öhdəliyi',        value: fmtAZN(edvOhde),     cls: edvOhde > 0 ? 'warn' : '',  sub: 'göndərilən' },
-    { label: 'ƏDV Krediti',         value: fmtAZN(edvKredit),   cls: 'ok',    sub: 'gələn' },
-    { label: 'ƏDV Balansı',         value: fmtAZN(Math.abs(edvBal)), cls: edvCls, sub: edvBal >= 0 ? 'ödənilməli' : 'artıq ödənmiş' },
+    {
+      label: 'E-qaimələr üzrə gəlir',
+      value: fmtAZN(gonder?.total || 0),
+      cls: 'ok',
+      sub: gonder ? `${gonder.invoices} qaimə` : '—',
+    },
+    {
+      label: 'E-qaimələr üzrə alış',
+      value: fmtAZN(gelir?.total || 0),
+      cls: '',
+      sub: gelir ? `${gelir.invoices} qaimə` : '—',
+    },
   ];
 
   return `<div class="summary-row">${chips.map(c => `
     <div class="chip">
       <div class="chip-label">${c.label}</div>
       <div class="chip-value ${c.cls}">${c.value}</div>
-      ${c.sub ? `<div style="font-size:11px;color:var(--muted);margin-top:3px">${c.sub}</div>` : ''}
+      <div style="font-size:11px;color:var(--muted);margin-top:3px">${c.sub}</div>
     </div>`).join('')}</div>`;
 }
 
@@ -118,79 +111,30 @@ function risksHTML(risks) {
     </div>`).join('');
 }
 
-// ── ƏDV comparison block ────────────────────────────────────────────────────
-function edvCompareHTML(edvOhde, edvKredit, edvBal, gelir) {
-  if (!edvOhde && !edvKredit) return '';
-
-  const edvBase = (gelir?.edv18 || 0) + (gelir?.edv0 || 0) + (gelir?.edvAzad || 0);
-  const structHTML = gelir && edvBase > 0 ? `
-    <div style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap">
-      ${edvStructChip('ƏDV 18%', gelir.edv18, edvBase, 'var(--accent)')}
-      ${edvStructChip('ƏDV 0%',  gelir.edv0,  edvBase, 'var(--yellow)')}
-      ${edvStructChip('ƏDV-dən azad', gelir.edvAzad, edvBase, 'var(--muted)')}
-    </div>` : '';
-
-  const balColor = edvBal > 0 ? 'var(--red)' : 'var(--green)';
-  const balLabel = edvBal > 0 ? 'ödənilməli' : 'artıq ödənmiş';
-
-  return `
-    <div class="section-title">ƏDV Balans Analizi</div>
-    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow-sm)">
-      <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:center">
-        <div style="text-align:center">
-          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">ƏDV Öhdəliyi<br><span style="font-weight:400">(göndərilən qaimələr)</span></div>
-          <div style="font-family:var(--mono);font-size:22px;font-weight:700;color:var(--red)">${fmtAZN(edvOhde)}</div>
-        </div>
-        <div style="text-align:center;color:var(--muted);font-size:22px">−</div>
-        <div style="text-align:center">
-          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">ƏDV Krediti<br><span style="font-weight:400">(gələn qaimələr)</span></div>
-          <div style="font-family:var(--mono);font-size:22px;font-weight:700;color:var(--green)">${fmtAZN(edvKredit)}</div>
-        </div>
-      </div>
-      <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);text-align:center">
-        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Nəticə — ${balLabel}</div>
-        <div style="font-family:var(--mono);font-size:28px;font-weight:700;color:${balColor}">${fmtAZN(Math.abs(edvBal))}</div>
-      </div>
-      ${structHTML}
-    </div>`;
-}
-
-function edvStructChip(label, val, base, color) {
-  const pct = base > 0 ? (val / base * 100).toFixed(1) : 0;
-  return `<div style="flex:1;min-width:120px;background:var(--bg3);border-radius:8px;padding:10px 12px">
-    <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">${label}</div>
-    <div style="font-family:var(--mono);font-size:14px;font-weight:600;color:${color};margin-top:3px">${fmtAZN(val)}</div>
-    <div style="font-size:11px;color:var(--muted)">${pct}%</div>
-  </div>`;
-}
-
 // ── Monthly trend ───────────────────────────────────────────────────────────
 function monthlyHTML(months, gelir, gonder) {
   if (!months.length) return '';
 
   const rows = months.map(m => {
-    const g = gelir?.monthly[m];
-    const gn= gonder?.monthly[m];
+    const g  = gelir?.monthly[m];
+    const gn = gonder?.monthly[m];
     const rev = gn?.total || 0;
     const exp = g?.total  || 0;
-    const mar = rev - exp;
+    const satInv = gn?.inv.size || 0;
+    const alInv  = g?.inv.size  || 0;
     return `<tr>
       <td style="text-align:left;font-family:var(--sans);font-weight:500;white-space:nowrap">${esc(m)}</td>
       <td>${rev > 0 ? fmtAZN(rev) : '<span class="num-zero">—</span>'}</td>
       <td>${exp > 0 ? fmtAZN(exp) : '<span class="num-zero">—</span>'}</td>
-      <td><b style="color:${mar >= 0 ? 'var(--green)' : 'var(--red)'}">${fmtAZN(mar)}</b></td>
-      <td>${gn?.edv > 0 ? fmtAZN(gn.edv) : '<span class="num-zero">—</span>'}</td>
-      <td>${g?.edv  > 0 ? fmtAZN(g.edv)  : '<span class="num-zero">—</span>'}</td>
-      <td>${gn?.inv.size || g?.inv.size ? (gn?.inv.size || 0) + ' / ' + (g?.inv.size || 0) : '<span class="num-zero">—</span>'}</td>
+      <td style="text-align:center;font-family:var(--mono);font-size:12px">${satInv || alInv ? `${satInv} / ${alInv}` : '<span class="num-zero">—</span>'}</td>
     </tr>`;
   });
 
   // Totals
-  const totalRev = months.reduce((s,m) => s + (gonder?.monthly[m]?.total || 0), 0);
-  const totalExp = months.reduce((s,m) => s + (gelir?.monthly[m]?.total  || 0), 0);
-  const totalMar = totalRev - totalExp;
-  const totalEdvO= months.reduce((s,m) => s + (gonder?.monthly[m]?.edv || 0), 0);
-  const totalEdvG= months.reduce((s,m) => s + (gelir?.monthly[m]?.edv  || 0), 0);
+  const totalRev    = months.reduce((s, m) => s + (gonder?.monthly[m]?.total || 0), 0);
+  const totalExp    = months.reduce((s, m) => s + (gelir?.monthly[m]?.total  || 0), 0);
+  const totalSatInv = months.reduce((s, m) => s + (gonder?.monthly[m]?.inv.size || 0), 0);
+  const totalAlInv  = months.reduce((s, m) => s + (gelir?.monthly[m]?.inv.size  || 0), 0);
 
   return `
     <div class="section-title">Aylıq Dinamika</div>
@@ -199,10 +143,7 @@ function monthlyHTML(months, gelir, gonder) {
         <th style="text-align:left">Ay</th>
         <th>Gəlir (satış)</th>
         <th>Xərc (alış)</th>
-        <th>Marja</th>
-        <th>ƏDV öhdəlik</th>
-        <th>ƏDV kredit</th>
-        <th style="text-align:center">Qaimə (sat/al)</th>
+        <th style="text-align:center">Qaimə sayı (satış/alış)</th>
       </tr></thead>
       <tbody>
         ${rows.join('')}
@@ -210,10 +151,7 @@ function monthlyHTML(months, gelir, gonder) {
           <td style="text-align:left;font-family:var(--sans);font-weight:700;color:var(--green)">CƏMİ</td>
           <td style="font-family:var(--mono);color:var(--green)">${fmtAZN(totalRev)}</td>
           <td style="font-family:var(--mono)">${fmtAZN(totalExp)}</td>
-          <td style="font-family:var(--mono);color:${totalMar>=0?'var(--green)':'var(--red)'};font-weight:700">${fmtAZN(totalMar)}</td>
-          <td style="font-family:var(--mono)">${fmtAZN(totalEdvO)}</td>
-          <td style="font-family:var(--mono)">${fmtAZN(totalEdvG)}</td>
-          <td></td>
+          <td style="text-align:center;font-family:var(--mono);font-size:12px">${totalSatInv} / ${totalAlInv}</td>
         </tr>
       </tbody>
     </table></div>`;

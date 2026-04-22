@@ -76,8 +76,7 @@ export function parseGelir(rows) {
     const sup     = String(r[km.gonderan]|| '').trim();
     const gVoen   = String(r[km.gVoen]  || '').trim();
     const status  = String(r[km.status] || '').trim();
-    const tarixRaw= String(r[km.tarix]  || '').trim();
-    const tarix   = tarixRaw.slice(0, 7); // YYYY-MM
+    const tarix   = parseMonth(r[km.tarix]);
     const amt     = toNum(r[km.umumi]);
     const edvAmt  = toNum(r[km.edvAmt]);
     const mal     = String(r[km.mal]    || '').trim();
@@ -172,7 +171,7 @@ export function parseGonder(rows) {
     const cust   = String(r[km.alan]   || '').trim();
     const aVoen  = String(r[km.aVoen]  || '').trim();
     const status = String(r[km.status] || '').trim();
-    const tarix  = String(r[km.tarix]  || '').trim().slice(0, 7);
+    const tarix  = parseMonth(r[km.tarix]);
     const amt    = toNum(r[km.umumi]);
     const edvAmt = toNum(r[km.edvAmt]);
     const mal    = String(r[km.mal]    || '').trim();
@@ -277,8 +276,27 @@ export function computeRisks(gelir, gonder) {
   return risks;
 }
 
-// ── Helpers ─────────────────────────────────────────────────────────────────
-function toNum(v) {
+// Handles date values from SheetJS: string "2025-01-15 10:00", JS Date, or Excel serial number
+function parseMonth(v) {
+  if (!v) return '';
+  // JS Date object (SheetJS with cellDates:true)
+  if (v instanceof Date) {
+    const y = v.getFullYear();
+    const m = String(v.getMonth() + 1).padStart(2, '0');
+    return `${y}-${m}`;
+  }
+  // Excel serial number (days since 1900-01-01)
+  if (typeof v === 'number') {
+    const d = new Date(Math.round((v - 25569) * 86400 * 1000));
+    const y = d.getUTCFullYear();
+    const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+    return `${y}-${m}`;
+  }
+  // String: "2025-01-15 10:00" or "2025-01" etc.
+  return String(v).trim().slice(0, 7);
+}
+
+
   if (v == null) return 0;
   if (typeof v === 'number') return v;
   return parseFloat(String(v).replace(/\./g, '').replace(',', '.')) || 0;
