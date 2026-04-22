@@ -42,6 +42,11 @@ export function init() {
       try {
         const wb   = XLSX.read(ev.target.result, { type: 'array' });
         const ws   = wb.Sheets[wb.SheetNames[0]];
+        // Portal exports have a summary row ("CƏMİ (filtered)") in row 1.
+        // Real column headers are in row 2 → skip first row with range offset.
+        const range = XLSX.utils.decode_range(ws['!ref']);
+        range.s.r = 1; // start from row index 1 (second row)
+        ws['!ref'] = XLSX.utils.encode_range(range);
         const rows = XLSX.utils.sheet_to_json(ws, { defval: null });
 
         if (!rows.length) throw new Error('Fayl boşdur və ya oxuna bilmir');

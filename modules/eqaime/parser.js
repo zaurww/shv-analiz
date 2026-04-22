@@ -15,22 +15,24 @@ function buildGelirKeyMap(sample) {
   const keys = Object.keys(sample);
   return {
     seriya:   findKey(keys, [/seriya/i]),
-    tarix:    findKey(keys, [/tarix/i]),
-    gonderan: findKey(keys, [/göndər.*ad|gonder.*ad|göndərən\s*adı/i, /gonderan/i]),
-    gVoen:    findKey(keys, [/göndər.*vöen|gonder.*voen|göndərən\s*vöen/i]),
-    status:   findKey(keys, [/status/i]),
-    umumi:    findKey(keys, [/ümumi/i, /umumi/i]),
-    edvAmt:   findKey(keys, [/ƏDV məbləği|ədv məbləği|edv mebleg/i]),
-    edv18:    findKey(keys, [/18%\s*baz|ƏDV\s*18|edv.*18/i]),
-    edv0:     findKey(keys, [/0%\s*baz|sıfır.*baz/i]),
-    edvAzad:  findKey(keys, [/azad/i]),
-    aksiz:    findKey(keys, [/aksiz/i]),
-    yolV:     findKey(keys, [/yol v/i]),
-    cemi:     findKey(keys, [/cəmi məbləği|cemi mebl/i]),
-    mal:      findKey(keys, [/mal.*xidm|xidm.*adı/i, /məhsul.*adı/i]),
-    kod:      findKey(keys, [/tnved|kod/i]),
-    miqdar:   findKey(keys, [/miqdar/i]),
-    vahid:    findKey(keys, [/vahid qiym/i]),
+    tarix:    findKey(keys, [/^tarix$/i]),
+    gonderan: findKey(keys, [/göndərən\s*adı|göndərən\s*ad/i, /gonder.*ad/i]),
+    gVoen:    findKey(keys, [/göndərən\s*vöen/i, /gonder.*voen/i]),
+    status:   findKey(keys, [/^status$/i]),
+    // "Yekun məbləğ" = total with VAT; fallback to "Cəmi məbləği"
+    umumi:    findKey(keys, [/yekun məbləğ/i, /ümumi/i]),
+    edvAmt:   findKey(keys, [/^ƏDV məbləği$/i, /ədv məbləği/i]),
+    // Portal uses "o/t ƏDV-yə 18%" style
+    edv18:    findKey(keys, [/ƏDV-yə\s*18%/i, /18%\s*baz/i]),
+    edv0:     findKey(keys, [/ƏDV-yə\s*0%/i, /0%\s*baz/i, /sıfır.*baz/i]),
+    edvAzad:  findKey(keys, [/ƏDV-dən\s*azad/i, /azad/i]),
+    aksiz:    findKey(keys, [/aksiz məbləği/i, /aksiz/i]),
+    yolV:     findKey(keys, [/yol\s*vergisi/i, /yol v/i]),
+    cemi:     findKey(keys, [/cəmi məbləği/i]),
+    mal:      findKey(keys, [/malın\s*\(işin.*\)\s*adı/i, /mal.*xidm.*adı/i, /məhsul.*adı/i]),
+    kod:      findKey(keys, [/malın\s*kodu/i, /tnved/i, /^kod$/i]),
+    miqdar:   findKey(keys, [/miqdarı/i, /miqdar/i]),
+    vahid:    findKey(keys, [/vahidinin\s*satış/i, /vahid qiym/i]),
   };
 }
 
@@ -38,16 +40,16 @@ function buildGonderKeyMap(sample) {
   const keys = Object.keys(sample);
   return {
     seriya:  findKey(keys, [/seriya/i]),
-    tarix:   findKey(keys, [/tarix/i]),
-    alan:    findKey(keys, [/alan.*adı|alıcı.*adı|müştəri.*adı/i, /alan\s/i]),
-    aVoen:   findKey(keys, [/alan.*vöen|alıcı.*vöen/i]),
-    status:  findKey(keys, [/status/i]),
-    umumi:   findKey(keys, [/ümumi/i, /umumi/i]),
-    edvAmt:  findKey(keys, [/ƏDV məbləği|ədv məbləği|edv mebleg/i]),
-    cemi:    findKey(keys, [/cəmi məbləği|cemi mebl/i]),
-    mal:     findKey(keys, [/mal.*xidm|xidm.*adı/i, /məhsul.*adı/i]),
-    miqdar:  findKey(keys, [/miqdar/i]),
-    vahid:   findKey(keys, [/vahid qiym/i]),
+    tarix:   findKey(keys, [/^tarix$/i]),
+    alan:    findKey(keys, [/alıcı\s*adı/i, /alan.*adı/i, /müştəri.*adı/i]),
+    aVoen:   findKey(keys, [/alıcı\s*vöen/i, /alan.*vöen/i]),
+    status:  findKey(keys, [/^status$/i]),
+    umumi:   findKey(keys, [/yekun məbləğ/i, /ümumi/i]),
+    edvAmt:  findKey(keys, [/^ƏDV məbləği$/i, /ədv məbləği/i]),
+    cemi:    findKey(keys, [/cəmi məbləği/i]),
+    mal:     findKey(keys, [/malın\s*\(işin.*\)\s*adı/i, /mal.*xidm.*adı/i, /məhsul.*adı/i]),
+    miqdar:  findKey(keys, [/miqdarı/i, /miqdar/i]),
+    vahid:   findKey(keys, [/vahidinin\s*satış/i, /vahid qiym/i]),
   };
 }
 
@@ -247,9 +249,9 @@ export function computeRisks(gelir, gonder) {
     const margin = gonder.total - gelir.total;
     const marginPct = gonder.total ? margin / gonder.total * 100 : 0;
 
-    if (marginPct < 0) {
+    if (gonder.total > 0 && margin < 0) {
       risks.push({ level: 'red', text: `Brüt marja mənfidir: ${marginPct.toFixed(1)}% — xərclər gəlirdən çoxdur.` });
-    } else if (marginPct < 5) {
+    } else if (gonder.total > 0 && marginPct < 5) {
       risks.push({ level: 'yellow', text: `Brüt marja çox aşağıdır: ${marginPct.toFixed(1)}% — fəaliyyətin rentabelliyi şübhəlidir.` });
     }
 
