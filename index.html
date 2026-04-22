@@ -174,15 +174,28 @@
 
 <!-- ═══════════════════════════════════════════════════
      BOOTSTRAP
+     switchTab is defined inline (non-module) so it is available
+     immediately when tab buttons are clicked, before the ES module loads.
+     Must stay in sync with TABS array in core/ui.js.
 ════════════════════════════════════════════════════ -->
+<script>
+  const TABS = ['shv', 'mv', 'edv', 'eqaime'];
+  function switchTab(tab) {
+    TABS.forEach(id => {
+      const panel  = document.getElementById('tab-' + id);
+      const button = document.getElementById('tab-btn-' + id);
+      if (panel)  panel.style.display  = id === tab ? 'block' : 'none';
+      if (button) button.classList.toggle('active', id === tab);
+    });
+  }
+  window.switchTab = switchTab;
+</script>
+
 <script type="module">
-  import { switchTab } from './core/ui.js';
   import { init as initShv    } from './modules/shv/index.js';
   import { init as initMv     } from './modules/mv/index.js';
   import { init as initEdv    } from './modules/edv/index.js';
   import { init as initEqaime } from './modules/eqaime/index.js';
-
-  window.switchTab = switchTab;
 
   initShv();
   initMv();
