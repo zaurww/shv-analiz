@@ -23,7 +23,7 @@
     border-radius: var(--radius);
     padding: 28px 20px;
     text-align: center;
-    cursor: pointer;
+    cursor: default;
     transition: all 0.2s;
     background: var(--bg2);
     box-shadow: var(--shadow-sm);
@@ -142,30 +142,24 @@
 
     <div class="eqaime-drop-grid">
       <!-- Gələn -->
-      <div class="eqaime-drop-zone" id="eqaime-drop-gelir"
-           ondragover="event.preventDefault();this.classList.add('drag-over')"
-           ondragleave="this.classList.remove('drag-over')"
-           ondrop="event.preventDefault();this.classList.remove('drag-over');document.getElementById('eqaime-input-gelir').files=event.dataTransfer.files;document.getElementById('eqaime-input-gelir').dispatchEvent(new Event('change'))">
+      <div class="eqaime-drop-zone" id="eqaime-drop-gelir">
         <div class="eqaime-dz-icon">📥</div>
         <div class="eqaime-dz-type gelir">Gələn E-Qaimələr</div>
         <div class="eqaime-dz-hint">Detallı gələnlər (.xlsx)</div>
-        <label class="btn-upload" style="margin-top:10px">
+        <label class="btn-upload" style="margin-top:12px">
           Fayl seçin
-          <input type="file" id="eqaime-input-gelir" accept=".xlsx,.xls" style="display:none">
+          <input type="file" id="eqaime-input-gelir" accept=".xlsx,.xls">
         </label>
         <div class="eqaime-filename" id="eqaime-name-gelir"></div>
       </div>
       <!-- Göndərilən -->
-      <div class="eqaime-drop-zone" id="eqaime-drop-gonder"
-           ondragover="event.preventDefault();this.classList.add('drag-over')"
-           ondragleave="this.classList.remove('drag-over')"
-           ondrop="event.preventDefault();this.classList.remove('drag-over');document.getElementById('eqaime-input-gonder').files=event.dataTransfer.files;document.getElementById('eqaime-input-gonder').dispatchEvent(new Event('change'))">
+      <div class="eqaime-drop-zone" id="eqaime-drop-gonder">
         <div class="eqaime-dz-icon">📤</div>
         <div class="eqaime-dz-type gonder">Göndərilən E-Qaimələr</div>
         <div class="eqaime-dz-hint">Detallı göndərilənlər (.xlsx)</div>
-        <label class="btn-upload" style="margin-top:10px">
+        <label class="btn-upload" style="margin-top:12px">
           Fayl seçin
-          <input type="file" id="eqaime-input-gonder" accept=".xlsx,.xls" style="display:none">
+          <input type="file" id="eqaime-input-gonder" accept=".xlsx,.xls">
         </label>
         <div class="eqaime-filename" id="eqaime-name-gonder"></div>
       </div>
@@ -183,28 +177,15 @@
 
 <!-- ═══════════════════════════════════════════════════
      BOOTSTRAP
-     switchTab defined inline so it is available immediately on click,
-     before the ES module finishes loading (modules execute deferred).
-     Must stay in sync with TABS array in core/ui.js.
 ════════════════════════════════════════════════════ -->
-<script>
-  const TABS = ['shv', 'mv', 'edv', 'eqaime'];
-  function switchTab(tab) {
-    TABS.forEach(id => {
-      const panel  = document.getElementById('tab-' + id);
-      const button = document.getElementById('tab-btn-' + id);
-      if (panel)  panel.style.display  = id === tab ? 'block' : 'none';
-      if (button) button.classList.toggle('active', id === tab);
-    });
-  }
-  window.switchTab = switchTab;
-</script>
-
 <script type="module">
+  import { switchTab } from './core/ui.js';
   import { init as initShv    } from './modules/shv/index.js';
   import { init as initMv     } from './modules/mv/index.js';
   import { init as initEdv    } from './modules/edv/index.js';
   import { init as initEqaime } from './modules/eqaime/index.js';
+
+  window.switchTab = switchTab;
 
   initShv();
   initMv();
