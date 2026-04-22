@@ -18,7 +18,7 @@ Tax analysis toolkit for Azerbaijan. Runs entirely in the browser — no backend
 | 📋 Şəxsi Hesab | `.xls` from tax portal | Parses personal tax account statement → analysis table with KYB/SYB detection → XLSX (2 sheets) |
 | 📄 MV Bəyannaməsi | `.xml` from e-taxes portal | Parses profit tax declaration → all indicators with PDF line codes → XLSX (3 sheets) |
 | 📊 ƏDV Bəyannaməsi | multiple `.xml` files | Parses VAT declarations → monthly report across 4 sections → XLSX |
-| 🧾 E-Qaimə | two `.xlsx` files (gələn + göndərilən) | Parses detailed e-invoice exports → ƏDV balance, monthly trend, top suppliers/customers, item structure, risk flags → XLSX (6 sheets) |
+| 🧾 E-Qaimə | two `.xlsx` files (gələn + göndərilən) | Parses detailed e-invoice exports → monthly trend, top suppliers/customers, item structure, risk flags → XLSX (6 sheets) |
 
 ---
 
@@ -49,243 +49,197 @@ modules/
     index.js            ← Wires multi-file drop, deduplication, generate button
   eqaime/
     parser.js           ← XLSX rows → gelir/gonder data objects + risk flags
-    renderer.js         ← Data → DOM HTML (ƏDV balance, monthly, suppliers, customers, items)
+    renderer.js         ← Data → DOM HTML (monthly, suppliers, customers, items)
     exporter.js         ← Data → XLSX (6 sheets)
     index.js            ← Wires two drop zones (gelir + gonder) → parse → render
 ```
 
 ---
 
+## Bootstrap Pattern (index.html) — CRITICAL
+
+`switchTab` must be defined in a plain `<script>` **before** the `<script type="module">` block. ES modules execute deferred — if any import fails the entire module block is skipped, leaving `window.switchTab` undefined and all tab buttons broken.
+
+```html
+<!-- 1. Plain script — executes synchronously, always available on click -->
+<script>
+  function switchTab(tab) {
+    ['shv','mv','edv','eqaime'].forEach(function(id) {
+      var panel  = document.getElementById('tab-' + id);
+      var button = document.getElementById('tab-btn-' + id);
+      if (panel)  panel.style.display = id === tab ? 'block' : 'none';
+      if (button) button.classList.toggle('active', id === tab);
+    });
+  }
+  window.switchTab = switchTab;
+</script>
+
+<!-- 2. Module script — loads async, wires file I/O events -->
+<script type="module">
+  import { init as initShv    } from './modules/shv/index.js';
+  import { init as initMv     } from './modules/mv/index.js';
+  import { init as initEdv    } from './modules/edv/index.js';
+  import { init as initEqaime } from './modules/eqaime/index.js';
+
+  initShv();
+  initMv();
+  initEdv();
+  initEqaime();
+</script>
+```
+
+`core/ui.js` still exports `switchTab` for use inside modules. The bootstrap no longer imports it — the inline version handles all `onclick=` calls.
+
+---
+
 ## How to Add a New Module
 
 1. Create `modules/{name}/` with `parser.js`, `renderer.js`, `exporter.js`, `index.js`
-2. Add a tab button in `index.html`:
-   ```html
-   <button class="tab-btn" id="tab-btn-{name}" onclick="switchTab('{name}')">🔧 Title</button>
-   ```
-3. Add a tab panel in `index.html` (copy the pattern from an existing tab)
-4. Register the id in `core/ui.js` → `TABS` array
-5. Import and call `init` in the bootstrap script:
-   ```js
-   import { init as initNew } from './modules/{name}/index.js';
-   initNew();
-   ```
-
-That's it — no other files need to change.
+2. Add tab button in `index.html`: `<button class="tab-btn" id="tab-btn-{name}" onclick="switchTab('{name}')">...</button>`
+3. Add tab panel in `index.html`
+4. Add `'{name}'` to the TABS array in the inline `<script>` in `index.html` AND in `core/ui.js`
+5. Import and call `init` in `<script type="module">`
 
 ---
 
 ## Module Contracts
 
 ### parser.js
-Every parser exports a single `parse(input)` function.  
-Input types: `string` (HTML or XML text) or pre-parsed row array (XLSX via SheetJS).  
-Returns a plain JS object — the "data object" passed to renderer and exporter.
+Exports `parse(input)` or named parse functions. Input: string (HTML/XML) or row array (SheetJS). Returns plain JS object.
 
 ### renderer.js
-Every renderer exports `render(data)`.  
-It hides the drop section, shows the results area, and sets `innerHTML`.  
-It wires buttons (XLSX, reset) **after** setting innerHTML — never before.
+Exports `render(data)`. Hides drop section, shows results area, sets innerHTML, wires buttons after innerHTML — never before.
 
 ### exporter.js
-Every exporter exports `download(data)`.  
-It creates an ExcelJS workbook, builds sheets, calls `saveWorkbook(wb, filename)` from `core/xlsx.js`.  
-ExcelJS is available as a global (`window.ExcelJS`) — loaded via `<script>` tag in `index.html`.
+Exports `download(data)`. Creates ExcelJS workbook, calls `saveWorkbook(wb, filename)`. ExcelJS available as global `window.ExcelJS`.
 
 ### index.js
-Every module index exports `init()`.  
-It wires DOM events (dragover, drop, change) and calls parser → renderer in sequence.  
-No direct DOM manipulation beyond its own tab panel.
+Exports `init()`. Wires DOM events, calls parser → renderer. No DOM manipulation outside its own tab panel.
 
 ---
 
 ## SHV Module — Key Details
 
-### Column Detection (dynamic)
+### Column Detection
 ```js
 let amountIdx = headers.findIndex(h => h.includes('Miqdar') && h.includes('Manat'));
-if (amountIdx === -1) amountIdx = 4; // fallback
+if (amountIdx === -1) amountIdx = 4;
 ```
-Reason: some portal exports add an extra `Miqdar (ABŞ$)` column, shifting the Manat column from index 4 to 5.
 
 ### KYB / SYB Detection
 ```js
 const isKyb  = opName.includes('KYB');
-const isKybl = opName.includes('KYBL'); // → kyb_azalma (cancellation)
-const isSyb  = opName.includes('SYB') && !isKyb; // SYB only if no KYB
+const isKybl = opName.includes('KYBL'); // → kyb_azalma
+const isSyb  = opName.includes('SYB') && !isKyb;
 ```
 
-### Declaration Count (`decl_count`)
-Pattern matched: `/CARİ\(B\)|DƏQİQLƏŞMİŞ\(B\)|DƏQİQLƏŞDİRİLMİŞ\(B\)/`  
-Excluded: `CARİ(ARAYIŞ)`, rows ending in `/N` (auto-generated avans corrections).  
-VAHID MUZDLU: 3 rows per quarter (one per month) → deduped by `date|declType` key in `vahidDates` Set.
+### Declaration Count
+Pattern: `/CARİ\(B\)|DƏQİQLƏŞMİŞ\(B\)|DƏQİQLƏŞDİRİLMİŞ\(B\)/`  
+Excluded: `CARİ(ARAYIŞ)`, rows ending `/N`.  
+VAHID MUZDLU: deduped by `date|declType` in `vahidDates` Set.
 
-### extractTaxKey Priority Order
+### extractTaxKey Priority
 ```
 Ödəmə tapşırığı / Sərəncam → Diger
-ƏDVQR YYYY/MM
-ƏDV YYYY/MM
-ÖMV YYYY N. Rüb
-VAHID MUZDLU YYYY N. Rüb
+ƏDVQR YYYY/MM → ƏDV YYYY/MM → ÖMV YYYY N.Rüb → VAHID MUZDLU YYYY N.Rüb
 ƏV - N.Rüb YYYY → HŞƏV - YYYY
 HŞƏV YYYY → HŞƏV - YYYY
 MV (not ÖMV) → MV - YYYY
-Universal fallback (YYYY/MM | YYYY N.Rüb | YYYY annual)
-Diger
+Universal fallback → Diger
 ```
 
-### AnalysisData Object Shape
+### Data Shape
 ```js
-{
-  companyName, voen, period, printDate, totalDebt,
-  taxes,        // sorted array of TaxEntry objects
-  kybActive, kybCancelled, sybActive, sybCancelled,
-  rawRows,      // all rows from the original statement table
-}
-```
+// AnalysisData:
+{ companyName, voen, period, printDate, totalDebt,
+  taxes, kybActive, kybCancelled, sybActive, sybCancelled, rawRows }
 
-### TaxEntry Shape
-```js
-{
-  key,                          // canonical period string, e.g. "ƏDV 2025/03"
-  hesablama, azalma,            // client declarations
+// TaxEntry:
+{ key, hesablama, azalma,
   kyb_hesablama, kyb_azalma, kyb_net, kyb_status, has_kyb,
   syb_hesablama, syb_azalma, syb_net, syb_status, has_syb,
-  total_hesablama, total_azalma, total_net,
-  decl_count,                   // unique declarations filed by client
-}
+  total_hesablama, total_azalma, total_net, decl_count }
 ```
 
 ---
 
 ## MV Module — Key Details
 
-### MV_LABELS Golden Rule
-**The PDF declaration is the single source of truth.**  
-If a line appears in Gəlirlər in the PDF → it belongs in the Gəlirlər section in code.  
-Never place a code based on its XML tag. Always verify against the PDF.
+**Golden Rule:** PDF is the single source of truth. Never place a code based on XML tag alone.
 
 ### Critical Corrections (do not revert)
 
-| XML code | Wrong beyCode | Correct beyCode | Reason |
-|---|---|---|---|
-| `1021` | `300` | `206` | Revenue item, not expense |
-| `1034` | `310` | `212` | Revenue (interest income) |
-| `1041` | `320` | `218` | ÜMUMİ GƏLİRLƏR |
-| `3001` | `39`  | `237` | Tax calculation section |
-| `3004` | `240` | `240` | sat.240=0 in sample; code kept at 240 |
-| `4017` | `1`   | `1.5` | Pul vəsaitləri, not Cəmi aktivlər |
-| `4022` | `2`   | `1.10`| Digər aktivlər, not Kapital |
-| `bagliHarc` codes | balance sheet | sat.221–236 | bagliHarc = expense details |
-
-### Adding or Fixing a Code
-```
-1. Find XML <gosterici> code and its <mebleg> value in the XML file
-2. Find the same amount in the PDF declaration
-3. Note PDF line number → beyCode
-4. Note PDF section → determines which section array
-5. Update MV_LABELS in modules/mv/labels.js
-6. Update sections array in modules/mv/renderer.js (SECTIONS constant)
-7. Update simpleSecs array in modules/mv/exporter.js
-```
-
-### Duplicate beyCode Issue
-Some XML codes share the same PDF beyCode. Secondary ones get suffix `b`/`*` and are excluded from sections.  
-Excluded from sections (duplicates, all zero in known samples): `2062`, `1031`, `1102`, `1106`.
-
-### Summary Chips → XML Codes
-
-| Chip | XML code | PDF line |
+| XML code | Correct beyCode | Reason |
 |---|---|---|
-| Cəmi gəlir | `1001` | sat.200 |
-| Cəmi xərclər | `1041` | sat.218 ÜMUMİ GƏLİRLƏR |
-| Vergitutma mənfəəti | `3001` | sat.237 |
-| Büdcəyə ödənilməli | `budce` (root XML field) | sat.243 |
-| Ümidsiz borc | `umidsizBorc` (root XML field) | Əlavə 3 |
+| `1021` | `206` | Revenue item, not expense |
+| `1034` | `212` | Revenue (interest income) |
+| `1041` | `218` | ÜMUMİ GƏLİRLƏR |
+| `3001` | `237` | Tax calculation section |
+| `4017` | `1.5` | Pul vəsaitləri |
+| `4022` | `1.10` | Digər aktivlər |
+| `bagliHarc` codes | sat.221–236 | Expense details, not balance sheet |
 
 ---
 
 ## ƏDV Module — Key Details
 
-- Accepts **multiple XML files** — one per month, deduplicates by `(ay, yil)`
-- 4 sections: Hissə 1 (sat.301–305), Hissə 2 (sat.308–317), Hissə 3 (Debitor borc), Hissə 4 (Hesablaşma)
-- File encoding: UTF-8 (unlike SHV which uses ISO-8859-1)
+- Multiple XML files, deduplicates by `(ay, yil)`
+- 4 sections: Hissə 1 (301–305), Hissə 2 (308–317), Hissə 3 (Debitor borc), Hissə 4 (Hesablaşma)
+- Encoding: UTF-8
 
 ---
 
 ## E-Qaimə Module — Key Details
 
-### Input Files
-Two separate XLSX exports from the e-taxes portal:
-- **Detallı gələn e-qaimələr** — received invoices (purchases)
-- **Detallı göndərilən e-qaimələr** — sent invoices (sales)
-
-Both are optional — module works with just one if needed.
-
-### Column Detection
-Column names vary between portal versions. `buildGelirKeyMap` / `buildGonderKeyMap` use regex patterns to find columns dynamically:
+### Input Format
+Portal exports `.xlsx` with summary row `"CƏMİ (filtered)"` in row 1. Real headers in row 2. Fixed in `index.js` by shifting SheetJS range:
 ```js
-findKey(keys, [/göndər.*ad|gonderan/i])  // supplier name
-findKey(keys, [/ümumi/i])                // total amount
-findKey(keys, [/ƏDV məbləği/i])          // VAT amount
+const range = XLSX.utils.decode_range(ws['!ref']);
+range.s.r = 1;
+ws['!ref'] = XLSX.utils.encode_range(range);
 ```
 
-### Passive Invoice Filtering
-Rows with `status` matching `/passiv/i` are excluded from all aggregations (counted separately as `passivCount`/`passivTotal`).
+### Actual Column Names (portal, 2025)
+| Field | Column |
+|---|---|
+| Total | `Yekun məbləğ` |
+| VAT | `ƏDV məbləği` |
+| VAT 18% base | `o/t ƏDV-yə 18%` |
+| VAT 0% base | `o/t ƏDV-yə 0%` |
+| VAT exempt | `o/t ƏDV-dən azad` |
+| Supplier | `Göndərən Adı` / `Göndərən VÖEN` |
+| Customer | `Alıcı Adı` / `Alıcı VÖEN` |
+| Item | `Malın (işin, xidmətin) adı` |
+| Qty | `Miqdarı` |
 
-### EqaimeData Object Shape
+Column detection uses `findKey()` with regex — resilient to portal changes.
+
+### Date Parsing
+`parseMonth(v)` in `parser.js` handles string `"2025-01-15 12:12"`, JS Date, and Excel serial number → returns `"YYYY-MM"`.
+
+### UI — What Is Shown
+- **2 chips:** gəlir (satış) · alış — no margin, no VAT chips
+- **Risk flags:** concentration >30%/50%, pending invoices, negative margin (only when revenue > 0)
+- **Aylıq dinamika:** Ay · Gəlir · Xərc · Qaimə sayı (satış/alış) with CƏMİ totals
+- Top Təchizatçılar (20) · Top Alıcılar (20) · Mal/Xidmət + TNVED
+
+### Data Shape
 ```js
-// parseGelir() returns:
-{
-  total, edv,
-  edv18, edv0, edvAzad, aksiz, yolV,  // VAT structure breakdown
-  invoices,        // unique seriya count (active only)
-  passivCount, passivTotal,
-  pendingCount,    // /gözləyi|pending/i rows
-  suppliers,       // { name → { total, edv, inv:Set, pending, voen } }
-  monthly,         // { 'YYYY-MM' → { total, edv, inv:Set } }
-  items,           // { mal adı → { total, qty, count } }
-  kodGroups,       // { first4ofTNVED → { total, count, samples[] } }
-  statuses,        // { status string → count }
-}
+// parseGelir():
+{ total, edv, edv18, edv0, edvAzad, aksiz, yolV,
+  invoices, passivCount, passivTotal, pendingCount,
+  suppliers, monthly, items, kodGroups, statuses }
 
-// parseGonder() returns:
-{
-  total, edv,
-  invoices, passivCount, passivTotal,
-  customers,  // { name → { total, edv, inv:Set, voen } }
-  monthly, items, statuses,
-}
+// parseGonder():
+{ total, edv, invoices, passivCount, passivTotal,
+  customers, monthly, items, statuses }
 ```
-
-### Risk Flags (computeRisks)
-Automatically generated from parsed data:
-
-| Condition | Level | Flag |
-|---|---|---|
-| Top supplier > 50% of expenses | 🔴 red | Concentration risk |
-| Top supplier > 30% of expenses | 🟡 yellow | Concentration warning |
-| Top customer > 50% of revenue | 🔴 red | Customer dependency |
-| Top customer > 30% of revenue | 🟡 yellow | Customer warning |
-| pendingCount > 0 | 🟡 yellow | VAT credit risk |
-| Gross margin < 0 | 🔴 red | Negative margin |
-| Gross margin < 5% | 🟡 yellow | Low margin |
-| edv0 > 50% of VAT base | 🟢 green | Limited VAT credit opportunity |
-| ƏDV balance < -5000 | 🟢 green | Potential VAT refund |
 
 ### XLSX Export — 6 Sheets
-| Sheet | Content |
-|---|---|
-| Xülasə | Key metrics: revenue, expenses, margin, VAT balance, VAT structure |
-| Aylıq Dinamika | Month-by-month: revenue, expenses, margin, VAT öhdəlik/kredit, invoice counts |
-| Top Təchizatçılar | All suppliers sorted by amount, with VÖEN and pending flag |
-| Top Alıcılar | All customers sorted by amount, with VÖEN |
-| Gələn — Mal-Xidmət | All items from received invoices sorted by amount |
-| Göndərilən — Mal-Xidmət | All items from sent invoices sorted by amount |
+Xülasə · Aylıq Dinamika · Top Təchizatçılar · Top Alıcılar · Gələn Mal-Xidmət · Göndərilən Mal-Xidmət
 
-### External Dependencies
-SheetJS (`xlsx.full.min.js`) added to `index.html` for reading `.xlsx` input files.  
-ExcelJS (already present) used for writing the export.
+### Dependencies
+SheetJS `xlsx.full.min.js` in `index.html` `<head>` (reading). ExcelJS (already present, writing).
 
 ---
 
@@ -293,21 +247,13 @@ ExcelJS (already present) used for writing the export.
 
 ### core/ui.js
 ```js
-switchTab(id)    // hide all tabs, show selected, toggle active class
-fmt(n)           // number → colored HTML span (num-pos / num-neg / num-zero)
-fmtRaw(n)        // number → plain string "1,234.56"
-esc(s)           // HTML-escape to prevent XSS
+switchTab(id), fmt(n), fmtRaw(n), esc(s)
 ```
 
 ### core/xlsx.js
 ```js
-xFill(hex)           // solid fill from 6-char hex
-xFont(hex, bold, sz) // font descriptor
-xBorderAll()         // thin border on all 4 sides
-xBorderBottom(style, hex)  // bottom border only
-NUM_FMT              // '#,##0.00;[Red]-#,##0.00;"-"'
-NUM_FMT_INT          // '#,##0;[Red]-#,##0;"-"'
-saveWorkbook(wb, filename)  // write buffer + trigger download
+xFill(hex), xFont(hex, bold, sz), xBorderAll(), xBorderBottom(style, hex)
+NUM_FMT, NUM_FMT_INT, saveWorkbook(wb, filename)
 ```
 
 ---
@@ -316,22 +262,25 @@ saveWorkbook(wb, filename)  // write buffer + trigger download
 
 | Issue | Resolution |
 |---|---|
-| Extra `Miqdar (ABŞ$)` column in some XLS exports | Dynamic `findIndex` for `Miqdar (Manat)` |
-| `/N` rows (avans auto-corrections) counted as declarations | `isSlashRow = /\/\s*\d+\s*$/.test(opName)` — these are skipped |
-| `ƏV` quarterly avans rows → should group with HŞƏV | Key normalized to `HŞƏV - YYYY` |
-| KYBL rows → should reduce KYB, not client balance | Explicit `isKybl` check before `opType` branch |
-| VAHID MUZDLU: portal emits 3 rows per quarter | `vahidDates` Set deduplicates by `date\|declType` |
-| MV `bagliHarc` XML tag confused with balance sheet | It holds expense details (sat.221–236) — all `2001–2073` codes are expenses |
-| Aktivlər codes had wrong beyCode mapping | Fixed 2025-04-09: full remap vs PDF screenshots |
-| ES Modules don't work via `file://` (double-click) | Use GitHub Pages or any HTTP server — not an issue for production |
-| E-qaimə column names vary between portal versions | Dynamic `findKey()` with regex patterns in `buildGelirKeyMap` / `buildGonderKeyMap` |
+| **`switchTab is not defined`** — tab buttons don't work | Define `switchTab` in a plain `<script>` before `<script type="module">`. See Bootstrap Pattern above. Never rely on module assignment alone. |
+| Extra `Miqdar (ABŞ$)` column in SHV exports | Dynamic `findIndex` for `Miqdar (Manat)` |
+| `/N` rows counted as declarations | `isSlashRow = /\/\s*\d+\s*$/.test(opName)` — skipped |
+| `ƏV` avans rows should group with HŞƏV | Key normalized to `HŞƏV - YYYY` |
+| KYBL rows reduce KYB | Explicit `isKybl` check before `opType` |
+| VAHID MUZDLU: 3 rows per quarter | `vahidDates` Set deduplicates by `date\|declType` |
+| MV `bagliHarc` is not balance sheet | It holds expense details sat.221–236 |
+| ES Modules don't work via `file://` | Use GitHub Pages or HTTP server |
+| E-qaimə: row 1 is summary, not headers | Shift SheetJS range `range.s.r = 1` before parse |
+| E-qaimə: column names vary | `findKey()` with regex in `buildGelirKeyMap` / `buildGonderKeyMap` |
+| E-qaimə: Tarix type varies | `parseMonth()` handles string / Date / serial number |
+| E-qaimə: margin risk fires with no data | Check `gonder.total > 0` before computing margin % |
 
 ---
 
 ## Typical Workflow with Claude
 
 1. Paste this README at the start of the conversation
-2. Upload the current `index.html` **or** reference the GitHub URL
-3. Reference file and function by name: "fix `extractTaxKey` in `modules/shv/parser.js`"
-4. Claude reads only the relevant file, makes a targeted change
-5. Download the changed file, upload to GitHub
+2. Upload current `index.html` + any relevant module files
+3. Reference by file and function: "fix `extractTaxKey` in `modules/shv/parser.js`"
+4. Claude makes a targeted change to the relevant file only
+5. Download, upload to GitHub
