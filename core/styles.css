@@ -218,7 +218,11 @@ thead th {
   z-index: 10;
 }
 thead tr:first-child th { top: 0;    z-index: 11; }
-thead tr:last-child  th { top: 33px; z-index: 10; }
+/* Second header row (only applies when thead has 2+ rows, e.g. SHV table with colspan).
+   The :not(:first-child) guard prevents this rule from also targeting single-row
+   thead tables (e.g. e-qaimə Aylıq Dinamika), where it would push the sticky header
+   down by 33px and hide the first data row (January) underneath. */
+thead tr:last-child:not(:first-child) th { top: 33px; z-index: 10; }
 thead th:first-child { text-align: left; }
 tbody tr { border-bottom: 1px solid var(--border); transition: background 0.12s; }
 tbody tr:hover { background: #f5f7fa; }
