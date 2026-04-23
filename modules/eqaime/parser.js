@@ -92,10 +92,16 @@ export function parseGelir(rows) {
 
     statuses[status] = (statuses[status] || 0) + 1;
 
-    const isPassiv  = /passiv/i.test(status);
-    const isPending = /gözləyi|pending/i.test(status);
+    // Excluded statuses (not counted in totals):
+    //   - Passiv edilmiş           (deactivated)
+    //   - Ləğv edildi              (cancelled)
+    //   - Silindi                  (deleted)
+    //   - Sistem tərəfindən silindi (system-deleted)
+    // IMPORTANT: "Ləğvdən imtina / Təsdiqləndi" is ACTIVE (refusal-to-cancel → confirmed).
+    const isExcluded = /passiv|ləğv\s*edildi|silindi/i.test(status);
+    const isPending  = /gözləyi|pending/i.test(status);
 
-    if (isPassiv) {
+    if (isExcluded) {
       passivCount++;
       passivTotal += amt;
       continue;
@@ -180,8 +186,9 @@ export function parseGonder(rows) {
 
     statuses[status] = (statuses[status] || 0) + 1;
 
-    const isPassiv = /passiv/i.test(status);
-    if (isPassiv) { passivCount++; passivTotal += amt; continue; }
+    // Excluded statuses (see parseGelir for full list)
+    const isExcluded = /passiv|ləğv\s*edildi|silindi/i.test(status);
+    if (isExcluded) { passivCount++; passivTotal += amt; continue; }
 
     total += amt;
     edv   += edvAmt;

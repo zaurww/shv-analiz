@@ -68,8 +68,8 @@ function headerHTML(period, gelir, gonder) {
       </div>
       <div class="company-period">
         <div>Dövr: ${esc(period)}</div>
-        ${gelir?.passivCount ? `<div style="margin-top:2px;color:var(--red)">${gelir.passivCount} passiv xaric edildi</div>` : ''}
-        ${gonder?.passivCount ? `<div style="color:var(--red)">${gonder.passivCount} passiv xaric edildi</div>` : ''}
+        ${gelir?.passivCount ? `<div style="margin-top:2px;color:var(--red)">${gelir.passivCount} gələn qaimə xaric edildi (ləğv/silindi/passiv)</div>` : ''}
+        ${gonder?.passivCount ? `<div style="color:var(--red)">${gonder.passivCount} göndərilən qaimə xaric edildi (ləğv/silindi/passiv)</div>` : ''}
       </div>
     </div>`;
 }
