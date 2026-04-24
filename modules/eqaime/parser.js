@@ -65,10 +65,11 @@ export function parseGelir(rows) {
   const kodGroups = {};   // first 4 chars of TNVED → {total, count, samples}
   const statuses  = {};
   const invSet    = new Set();
+  const passivSet = new Set(); // unique excluded seriya numbers
 
   let total = 0, edv = 0;
   let edv18 = 0, edv0 = 0, edvAzad = 0, aksiz = 0, yolV = 0;
-  let passivCount = 0, passivTotal = 0;
+  let passivTotal = 0;
   let pendingCount = 0;
 
   for (const r of rows) {
@@ -102,7 +103,7 @@ export function parseGelir(rows) {
     const isPending  = /gözləyi|pending/i.test(status);
 
     if (isExcluded) {
-      passivCount++;
+      if (seriya) passivSet.add(seriya);
       passivTotal += amt;
       continue;
     }
@@ -153,7 +154,7 @@ export function parseGelir(rows) {
   return {
     total, edv, edv18, edv0, edvAzad, aksiz, yolV,
     invoices: invSet.size,
-    passivCount, passivTotal,
+    passivCount: passivSet.size, passivTotal,
     pendingCount,
     suppliers, monthly, items, kodGroups, statuses,
   };
@@ -168,9 +169,10 @@ export function parseGonder(rows) {
   const items     = {};
   const statuses  = {};
   const invSet    = new Set();
+  const passivSet = new Set();
 
   let total = 0, edv = 0;
-  let passivCount = 0, passivTotal = 0;
+  let passivTotal = 0;
 
   for (const r of rows) {
     const seriya = String(r[km.seriya] || '').trim();
@@ -188,7 +190,7 @@ export function parseGonder(rows) {
 
     // Excluded statuses (see parseGelir for full list)
     const isExcluded = /passiv|ləğv\s*edildi|silindi/i.test(status);
-    if (isExcluded) { passivCount++; passivTotal += amt; continue; }
+    if (isExcluded) { if (seriya) passivSet.add(seriya); passivTotal += amt; continue; }
 
     total += amt;
     edv   += edvAmt;
@@ -219,7 +221,7 @@ export function parseGonder(rows) {
   return {
     total, edv,
     invoices: invSet.size,
-    passivCount, passivTotal,
+    passivCount: passivSet.size, passivTotal,
     customers, monthly, items, statuses,
   };
 }
