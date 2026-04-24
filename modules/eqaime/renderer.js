@@ -141,8 +141,8 @@ function monthlyHTML(months, gelir, gonder) {
     <div class="table-wrap"><table>
       <thead><tr>
         <th style="text-align:left">Ay</th>
-        <th>Gəlir (satış)</th>
-        <th>Xərc (alış)</th>
+        <th>Satışlar (₼)</th>
+        <th>Alışlar (₼)</th>
         <th style="text-align:center">Qaimə sayı (satış/alış)</th>
       </tr></thead>
       <tbody>

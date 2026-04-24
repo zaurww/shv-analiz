@@ -63,33 +63,26 @@ function buildSummary(wb, gelir, gonder) {
 
   const rows = [
     ['', '', ''],
-    ['GƏLİR (SATIŞ)', '', ''],
-    ['Ümumi gəlir',             rev,     ''],
-    ['ƏDV (göndərilən)',         edvOhde, ''],
-    ['Qaimə sayı',               gonder?.invoices || 0, ''],
-    ['Xaric edilmiş qaimə',      gonder?.passivCount || 0, ''],
+    ['SATIŞLAR (GƏLİR)', '', ''],
+    ['Ümumi məbləğ',              rev,     ''],
+    ['Qaimə sayı',                gonder?.invoices    || 0, ''],
+    ['Xaric edilmiş qaimə',       gonder?.passivCount || 0, ''],
     ['', '', ''],
-    ['XƏRC (ALIŞ)', '', ''],
-    ['Ümumi xərc',               exp,     ''],
-    ['ƏDV (gələn)',               edvKredit, ''],
-    ['Qaimə sayı',               gelir?.invoices || 0, ''],
-    ['Xaric edilmiş qaimə',      gelir?.passivCount || 0, ''],
-    ['Gözləyən (pending)',       gelir?.pendingCount || 0, ''],
-    ['', '', ''],
-    ['NƏTİCƏ', '', ''],
-    ['Brüt Marja',               margin,  ''],
-    ['Marja faizi',              rev > 0 ? margin / rev * 100 : 0, '%'],
-    ['ƏDV Balansı (öhdəlik - kredit)', edvBal, ''],
+    ['ALIŞLAR (XƏRC)', '', ''],
+    ['Ümumi məbləğ',              exp,        ''],
+    ['Qaimə sayı',                gelir?.invoices    || 0, ''],
+    ['Xaric edilmiş qaimə',       gelir?.passivCount || 0, ''],
+    ['Gözləyən (pending)',         gelir?.pendingCount || 0, ''],
     ['', '', ''],
     ['ƏDV STRUKTURU (GƏLƏNLƏr)', '', ''],
-    ['ƏDV 18% bazası',           gelir?.edv18   || 0, ''],
-    ['ƏDV 0% bazası',            gelir?.edv0    || 0, ''],
-    ['ƏDV-dən azad',             gelir?.edvAzad || 0, ''],
-    ['Aksiz',                    gelir?.aksiz   || 0, ''],
-    ['Yol vergisi',              gelir?.yolV    || 0, ''],
+    ['ƏDV 18% bazası',            gelir?.edv18   || 0, ''],
+    ['ƏDV 0% bazası',             gelir?.edv0    || 0, ''],
+    ['ƏDV-dən azad',              gelir?.edvAzad || 0, ''],
+    ['Aksiz',                     gelir?.aksiz   || 0, ''],
+    ['Yol vergisi',               gelir?.yolV    || 0, ''],
   ];
 
-  const headers = new Set(['GƏLİR (SATIŞ)', 'XƏRC (ALIŞ)', 'NƏTİCƏ', 'ƏDV STRUKTURU (GƏLƏNLƏr)']);
+  const headers = new Set(['SATIŞLAR (GƏLİR)', 'ALIŞLAR (XƏRC)', 'ƏDV STRUKTURU (GƏLƏNLƏr)']);
 
   let ri = 2;
   for (const [lbl, val, unit] of rows) {
@@ -121,14 +114,15 @@ function buildSummary(wb, gelir, gonder) {
 // ── Sheet 2: Monthly ────────────────────────────────────────────────────────
 function buildMonthly(wb, gelir, gonder) {
   const ws = wb.addWorksheet('Aylıq Dinamika', { properties: { tabColor: { argb: 'FF10B981' } } });
-  ws.columns = [{ width: 14 }, { width: 16 }, { width: 16 }, { width: 16 }, { width: 14 }, { width: 14 }, { width: 12 }, { width: 12 }];
+  ws.columns = [{ width: 14 }, { width: 20 }, { width: 20 }, { width: 22 }];
 
   const fl = hex => xFill(hex); const fn = (h,b,s) => xFont(h,b,s);
   const aL = () => ({ horizontal:'left', vertical:'middle' });
   const aR = () => ({ horizontal:'right', vertical:'middle' });
+  const aC = () => ({ horizontal:'center', vertical:'middle' });
   const brd = () => xBorderAll();
 
-  ws.mergeCells('A1:H1');
+  ws.mergeCells('A1:D1');
   Object.assign(ws.getRow(1).getCell(1), {
     value: 'Aylıq Dinamika',
     font: fn(C.text, true, 12), fill: fl('D1FAE5'), alignment: aL(),
@@ -136,10 +130,10 @@ function buildMonthly(wb, gelir, gonder) {
   ws.getRow(1).height = 20;
 
   const hr = ws.getRow(2); hr.height = 17;
-  ['Ay', 'Gəlir (₼)', 'Xərc (₼)', 'Marja (₼)', 'ƏDV öhdəlik', 'ƏDV kredit', 'Sat. qaimə', 'Al. qaimə'].forEach((h, i) => {
+  ['Ay', 'Satışlar (₼)', 'Alışlar (₼)', 'Qaimə sayı (satış/alış)'].forEach((h, i) => {
     const c = hr.getCell(i+1);
     c.value = h; c.font = fn('FFFFFF', true, 9); c.fill = fl('059669');
-    c.alignment = i === 0 ? aL() : aR(); c.border = brd();
+    c.alignment = i === 0 ? aL() : i === 3 ? aC() : aR(); c.border = brd();
   });
 
   const months = [...new Set([
@@ -147,29 +141,35 @@ function buildMonthly(wb, gelir, gonder) {
     ...Object.keys(gonder?.monthly || {}),
   ])].sort();
 
-  let totRev=0, totExp=0, totEdvO=0, totEdvG=0;
+  let totRev = 0, totExp = 0, totSat = 0, totAl = 0;
   months.forEach((m, i) => {
     const g  = gelir?.monthly[m];
     const gn = gonder?.monthly[m];
-    const rev = gn?.total || 0; const exp = g?.total || 0; const mar = rev - exp;
-    totRev+=rev; totExp+=exp; totEdvO+=(gn?.edv||0); totEdvG+=(g?.edv||0);
+    const rev    = gn?.total     || 0;
+    const exp    = g?.total      || 0;
+    const satInv = gn?.inv.size  || 0;
+    const alInv  = g?.inv.size   || 0;
+    totRev += rev; totExp += exp; totSat += satInv; totAl += alInv;
+
     const bg = fl(i % 2 === 0 ? C.bg : C.bg2);
-    const dr = ws.addRow([m, rev||null, exp||null, mar||null, gn?.edv||null, g?.edv||null, gn?.inv.size||null, g?.inv.size||null]);
+    const dr = ws.addRow([m, rev || null, exp || null, `${satInv} / ${alInv}`]);
     dr.height = 16;
     dr.eachCell({ includeEmpty: true }, (cell, cn) => {
       cell.fill = bg; cell.border = brd();
-      cell.alignment = cn === 1 ? aL() : aR();
-      cell.font = fn(cn === 4 ? (mar < 0 ? C.red : C.green) : C.text, cn === 4, 10);
-      if (cn > 1 && cn < 7) cell.numFmt = NUM_FMT;
+      cell.alignment = cn === 1 ? aL() : cn === 4 ? aC() : aR();
+      cell.font = fn(C.text, false, 10);
+      if (cn === 2 || cn === 3) cell.numFmt = NUM_FMT;
     });
   });
 
-  const tr = ws.addRow(['CƏMİ', totRev, totExp, totRev-totExp, totEdvO, totEdvG, '', '']); tr.height = 18;
+  // CƏMİ row
+  const tr = ws.addRow(['CƏMİ', totRev, totExp, `${totSat} / ${totAl}`]);
+  tr.height = 18;
   tr.eachCell({ includeEmpty: true }, (cell, cn) => {
     cell.fill = fl(C.greenLt); cell.border = brd();
-    cell.alignment = cn === 1 ? aL() : aR();
+    cell.alignment = cn === 1 ? aL() : cn === 4 ? aC() : aR();
     cell.font = fn(C.green, true, 10);
-    if (cn > 1 && cn < 7) cell.numFmt = NUM_FMT;
+    if (cn === 2 || cn === 3) cell.numFmt = NUM_FMT;
   });
 }
 
